@@ -4,10 +4,16 @@ This module contains functions to initialize python packages and projects
 
 import os
 import click
-from .utils import snake_case
+from croco_cli.globals import GITHUB_USER_EMAIL, GITHUB_USER_LOGIN, GITHUB_USER_NAME
+from croco_cli.utils import snake_case
 
 
-def add_poetry(
+@click.group()
+def init():
+    """Initialize python packages and projects"""
+
+
+def _add_poetry(
         snaked_name: str,
         project_name: str,
         description: str
@@ -19,18 +25,17 @@ def add_poetry(
     :param description: The description of the project
     :return: None
     """
-    # os.system('pip install poetry')
     toml = 'pyproject.toml'
     with open(toml, 'w') as toml_file:
         toml_file.write(f"""[tool.poetry]
 name = '{snaked_name}'
 version = '0.1.0'
 description = '{description}'
-authors = ['Alexey <abelenkov2006@gmail.com>']
+authors = ['{GITHUB_USER_NAME} <{GITHUB_USER_EMAIL}>']
 license = 'MIT'
 readme = 'README.md'
-repository = 'https://github.com/blnkoff/{project_name}'
-homepage = 'https://github.com/blnkoff/{project_name}'
+repository = 'https://github.com/{GITHUB_USER_LOGIN}/{project_name}'
+homepage = 'https://github.com/{GITHUB_USER_LOGIN}/{project_name}'
 classifiers = [
     'Development Status :: 2 - Pre-Alpha',
     'Intended Audience :: Developers',
@@ -54,7 +59,7 @@ build-backend = 'poetry.core.masonry.api'
             pass
 
 
-def add_packages(open_source: bool) -> None:
+def _add_packages(open_source: bool) -> None:
     """
     Adds initial packages to pyproject.toml
     :param open_source: Whether project should be open-source
@@ -67,7 +72,7 @@ def add_packages(open_source: bool) -> None:
         os.system('poetry add -D twine')
 
 
-def initialize_folders(
+def _initialize_folders(
         snaked_name: str,
         project_name: str,
         description: str
@@ -98,9 +103,7 @@ PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 ~~~~~~~~~~~~~~
 {description}
 
-Usage example:
-
-:copyright: (c) 2023 by Alexey
+:copyright: (c) 2023 by {GITHUB_USER_NAME}
 :license: MIT, see LICENSE for more details.
 \"\"\"
 """)
@@ -115,9 +118,9 @@ Usage example:
         conftest_file.write('import pytest')
 
     with open('LICENSE', 'w') as license_file:
-        license_file.write("""MIT License
+        license_file.write(f"""MIT License
 
-Copyright (c) 2023 Alexey
+Copyright (c) 2023 {GITHUB_USER_NAME}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -138,7 +141,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.""")
 
 
-def add_readme(
+def _add_readme(
         project_name: str,
         description: str,
         open_source: bool
@@ -157,7 +160,7 @@ def add_readme(
 {description}
 
 - **[Telegram channel](https://t.me/crocofactory)**
-- **[Bug reports](https://github.com/blnkoff/{project_name}/issues)**
+- **[Bug reports](https://github.com/{GITHUB_USER_LOGIN}/{project_name}/issues)**
 
 Package's source code is made available under the [MIT License](LICENSE)
 
@@ -175,23 +178,21 @@ pip install {project_name}
 To install `{project_name}` from GitHub, use that:
 
 ```shell
-pip install git+https://github.com/blnkoff/{project_name}.git
+pip install git+https://github.com/{GITHUB_USER_LOGIN}/{project_name}.git
 ```""")
         else:
             content += (f"""
 To install `{project_name}` you need to get GitHub API token. After you need to replace this token instead of `<TOKEN>`:
 
 ```shell
-pip install git+https://<TOKEN>@github.com/blnkoff/{project_name}.git
+pip install git+https://<TOKEN>@github.com/{GITHUB_USER_LOGIN}/{project_name}.git
 ```""")
         readme_file.write(content)
 
 
-def package() -> None:
-    """
-    Initializes the package directory
-    :return: None
-    """
+@init.command()
+def _package() -> None:
+    """Initialize the package directory"""
     repo_name = os.path.basename(os.getcwd())
     snaked_name = snake_case(repo_name)
 
@@ -200,7 +201,7 @@ def package() -> None:
     click.echo('The package will be configured as open-source package')
     open_source = click.confirm('Agree?')
 
-    add_poetry(snaked_name, repo_name, description)
-    add_packages(open_source)
-    initialize_folders(snaked_name, repo_name, description)
-    add_readme(repo_name, description, open_source)
+    _add_poetry(snaked_name, repo_name, description)
+    _add_packages(open_source)
+    _initialize_folders(snaked_name, repo_name, description)
+    _add_readme(repo_name, description, open_source)
