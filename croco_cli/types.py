@@ -6,6 +6,8 @@ from typing import Union, Callable, Any
 from click import Group, Command
 from click.decorators import GrpType
 from typing import TypedDict, NotRequired
+from github.AuthenticatedUser import AuthenticatedUser
+from github.NamedUser import NamedUser
 
 AnyCallable = Callable[..., Any]
 ClickGroup = Union[Group, Callable[[AnyCallable], Union[Group, GrpType]]]
@@ -27,3 +29,11 @@ class Package(TypedDict):
 class GithubPackage(Package):
     branch: NotRequired[str]
     access_token: NotRequired[str]
+
+
+class GithubUser(TypedDict):
+    data: AuthenticatedUser | NamedUser
+    login: str
+    name: str
+    email: str
+    access_token: str

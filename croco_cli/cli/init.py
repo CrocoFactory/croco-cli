@@ -16,15 +16,20 @@ def init():
 def _add_poetry(
         snaked_name: str,
         project_name: str,
-        description: str
+        description: str,
+        is_package: bool
 ) -> None:
     """
     Adds a pyproject.toml file
     :param snaked_name: The name of the project in snake_case
     :param project_name: Name of the package
     :param description: The description of the project
+    :param is_package: Whether project should be configured as Python package
     :return: None
     """
+
+    intended_audience = 'Intended Audience :: Customer Service' if not is_package else 'Intended Audience :: Developers'
+
     toml = 'pyproject.toml'
     with open(toml, 'w') as toml_file:
         toml_file.write(f"""[tool.poetry]
@@ -38,7 +43,7 @@ repository = 'https://github.com/{GITHUB_USER_LOGIN}/{project_name}'
 homepage = 'https://github.com/{GITHUB_USER_LOGIN}/{project_name}'
 classifiers = [
     'Development Status :: 2 - Pre-Alpha',
-    'Intended Audience :: Developers',
+    '{intended_audience}',
     'Topic :: Software Development :: Libraries :: Python Modules',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3 :: Only',
@@ -59,15 +64,19 @@ build-backend = 'poetry.core.masonry.api'
             pass
 
 
-def _add_packages(open_source: bool) -> None:
+def _add_packages(open_source: bool, is_package: bool) -> None:
     """
     Adds initial packages to pyproject.toml
     :param open_source: Whether project should be open-source
+    :param is_package: Whether packages should be installed for the developing a Python package
     :return: None
     """
     os.system('poetry add -D pytest')
 
-    if open_source:
+    if not is_package:
+        os.system('poetry add loguru')
+        return
+    elif open_source:
         os.system('poetry add -D build')
         os.system('poetry add -D twine')
 
@@ -75,7 +84,8 @@ def _add_packages(open_source: bool) -> None:
 def _initialize_folders(
         snaked_name: str,
         project_name: str,
-        description: str
+        description: str,
+        is_package: bool
 ) -> None:
     """
     Initializes the project folders
@@ -140,58 +150,74 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.""")
 
+        if not is_package:
+            with open('main.py', 'w') as main_file:
+                main_file.write("""import loguru
+                import asyncio
+                
+                async def main():
+                    pass
+                
+                if __name__ == '__main__':
+                    asyncio.run(main())
+                """)
+
 
 def _add_readme(
         project_name: str,
         description: str,
-        open_source: bool
+        open_source: bool,
+        is_package: bool
 ) -> None:
     """
     :param project_name: Name of the package
     :param description: The description of the project
     :param open_source: Whether project should be open-source
+    :param is_package: Whether the readme should be configured for the Python package
     :return: None
     """
-    with open('README.md', 'w') as readme_file:
-        content = (f"""# {project_name}
+    content = (f"""# {project_name}
 
-[![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)
+    [![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)
 
-{description}
+    {description}
 
-- **[Telegram channel](https://t.me/crocofactory)**
-- **[Bug reports](https://github.com/{GITHUB_USER_LOGIN}/{project_name}/issues)**
+    - **[Telegram channel](https://t.me/crocofactory)**
+    - **[Bug reports](https://github.com/{GITHUB_USER_LOGIN}/{project_name}/issues)**
 
-Package's source code is made available under the [MIT License](LICENSE)
+    Source code is made available under the [MIT License](LICENSE)""")
 
-# Installing {project_name}""")
+    if is_package:
+        content += '# Installing {project_name}'
 
         if open_source:
             content += (f"""
-To install `{project_name}` from PyPi, you can use that:
-
-```shell
-pip install {project_name}
-```
-""")
+        To install `{project_name}` from PyPi, you can use that:
+    
+        ```shell
+        pip install {project_name}
+        ```
+        """)
             content += (f"""
-To install `{project_name}` from GitHub, use that:
-
-```shell
-pip install git+https://github.com/{GITHUB_USER_LOGIN}/{project_name}.git
-```""")
+        To install `{project_name}` from GitHub, use that:
+    
+        ```shell
+        pip install git+https://github.com/{GITHUB_USER_LOGIN}/{project_name}.git
+        ```""")
         else:
             content += (f"""
-To install `{project_name}` you need to get GitHub API token. After you need to replace this token instead of `<TOKEN>`:
+        To install `{project_name}` you need to get GitHub API token. After you need to replace this token instead of `<TOKEN>`:
+    
+        ```shell
+        pip install git+https://<TOKEN>@github.com/{GITHUB_USER_LOGIN}/{project_name}.git
+        ```""")
 
-```shell
-pip install git+https://<TOKEN>@github.com/{GITHUB_USER_LOGIN}/{project_name}.git
-```""")
+    with open('README.md', 'w') as readme_file:
         readme_file.write(content)
 
 
 @init.command()
-def _package() -> None:
+def package() -> None:
     """Initialize the package directory"""
     repo_name = os.path.basename(os.getcwd())
     snaked_name = snake_case(repo_name)
@@ -201,7 +227,20 @@ def _package() -> None:
     click.echo('The package will be configured as open-source package')
     open_source = click.confirm('Agree?')
 
-    _add_poetry(snaked_name, repo_name, description)
-    _add_packages(open_source)
-    _initialize_folders(snaked_name, repo_name, description)
-    _add_readme(repo_name, description, open_source)
+    _add_poetry(snaked_name, repo_name, description, True)
+    _add_packages(open_source, True)
+    _initialize_folders(snaked_name, repo_name, description, True)
+    _add_readme(repo_name, description, open_source, True)
+
+
+@init.command()
+def project() -> None:
+    """Initialize the project directory"""
+    repo_name = os.path.basename(os.getcwd())
+    snaked_name = snake_case(repo_name)
+    description = click.prompt('Enter the project description')
+
+    _add_poetry(snaked_name, repo_name, description, False)
+    _add_packages(False, False)
+    _initialize_folders(snaked_name, repo_name, description, False)
+    _add_readme(repo_name, description, False, False)

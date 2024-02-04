@@ -2,10 +2,8 @@
 Global variables used throughout the croco-cli
 """
 
-import os
 from croco_cli.types import Package, GithubPackage
-from github import Github
-from github import Auth
+from .database import Database
 
 PYPI_PACKAGES = (
     Package(name="adspower", description="AdsPower local API"),
@@ -21,17 +19,11 @@ GITHUB_PACKAGES = (
     GithubPackage(name="seldegen", description="Utilities to develop Selenium-based projects", branch='test')
 )
 
-GITHUB_API_TOKEN = os.environ.get('GITHUB_API_TOKEN')
+DATABASE = Database()
 
-_auth = Auth.Token(GITHUB_API_TOKEN)
-
-with Github(auth=_auth) as github_api:
-    GITHUB_USER = github_api.get_user()
-    GITHUB_USER_LOGIN = GITHUB_USER.login
-    GITHUB_USER_NAME = GITHUB_USER.name
-    _emails = GITHUB_USER.get_emails()
-
-    for email in _emails:
-        if email.primary:
-            GITHUB_USER_EMAIL = email.email
-            break
+_github_user = DATABASE.get_github_user()
+GITHUB_USER_EMAIL = _github_user['email']
+GITHUB_USER_LOGIN = _github_user['login']
+GITHUB_USER_NAME = _github_user['name']
+GITHUB_USER_DATA = _github_user['data']
+GITHUB_API_TOKEN = _github_user['access_token']
