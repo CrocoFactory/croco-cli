@@ -6,6 +6,7 @@ import click
 from typing import cast
 from .init import init
 from .install import install
+from .user import user
 from croco_cli.types import ClickGroup
 
 
@@ -24,3 +25,4 @@ def cli():
 
 cli.add_command(cast(ClickGroup, init))
 cli.add_command(cast(ClickGroup, install))
+cli.add_command(cast(ClickGroup, user))

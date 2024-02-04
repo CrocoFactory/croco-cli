@@ -20,10 +20,3 @@ GITHUB_PACKAGES = (
 )
 
 DATABASE = Database()
-
-_github_user = DATABASE.get_github_user()
-GITHUB_USER_EMAIL = _github_user['email']
-GITHUB_USER_LOGIN = _github_user['login']
-GITHUB_USER_NAME = _github_user['name']
-GITHUB_USER_DATA = _github_user['data']
-GITHUB_API_TOKEN = _github_user['access_token']

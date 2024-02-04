@@ -3,9 +3,9 @@ This module contains functions to initialize python packages and projects
 """
 
 import os
-import click
-from croco_cli.globals import GITHUB_USER_EMAIL, GITHUB_USER_LOGIN, GITHUB_USER_NAME
-from croco_cli.utils import snake_case
+import click 
+from croco_cli.utils import snake_case, require_github
+from croco_cli.globals import DATABASE
 
 
 @click.group()
@@ -27,6 +27,7 @@ def _add_poetry(
     :param is_package: Whether project should be configured as Python package
     :return: None
     """
+    github_user = DATABASE.get_github_user()
 
     intended_audience = 'Intended Audience :: Customer Service' if not is_package else 'Intended Audience :: Developers'
 
@@ -36,11 +37,11 @@ def _add_poetry(
 name = '{snaked_name}'
 version = '0.1.0'
 description = '{description}'
-authors = ['{GITHUB_USER_NAME} <{GITHUB_USER_EMAIL}>']
+authors = ['{github_user['name']} <{github_user['email']}>']
 license = 'MIT'
 readme = 'README.md'
-repository = 'https://github.com/{GITHUB_USER_LOGIN}/{project_name}'
-homepage = 'https://github.com/{GITHUB_USER_LOGIN}/{project_name}'
+repository = 'https://github.com/{github_user['login']}/{project_name}'
+homepage = 'https://github.com/{github_user['login']}/{project_name}'
 classifiers = [
     'Development Status :: 2 - Pre-Alpha',
     '{intended_audience}',
@@ -94,6 +95,7 @@ def _initialize_folders(
     :param description: The description of the project
     :return: None
     """
+    github_user = DATABASE.get_github_user()
     os.mkdir(snaked_name)
     os.chdir(snaked_name)
 
@@ -113,7 +115,7 @@ PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 ~~~~~~~~~~~~~~
 {description}
 
-:copyright: (c) 2023 by {GITHUB_USER_NAME}
+:copyright: (c) 2023 by {github_user['name']}
 :license: MIT, see LICENSE for more details.
 \"\"\"
 """)
@@ -122,15 +124,16 @@ PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
     os.mkdir('tests')
     os.chdir('tests')
     open('__init__.py', 'w').close()
-    os.chdir('../')
 
     with open('conftest.py', 'w') as conftest_file:
         conftest_file.write('import pytest')
 
+    os.chdir('../')
+
     with open('LICENSE', 'w') as license_file:
         license_file.write(f"""MIT License
 
-Copyright (c) 2023 {GITHUB_USER_NAME}
+Copyright (c) 2023 {github_user['name']}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -153,14 +156,15 @@ SOFTWARE.""")
         if not is_package:
             with open('main.py', 'w') as main_file:
                 main_file.write("""import loguru
-                import asyncio
-                
-                async def main():
-                    pass
-                
-                if __name__ == '__main__':
-                    asyncio.run(main())
-                """)
+import asyncio
+
+
+async def main():
+    pass
+
+
+if __name__ == '__main__':
+    asyncio.run(main())""")
 
 
 def _add_readme(
@@ -176,47 +180,49 @@ def _add_readme(
     :param is_package: Whether the readme should be configured for the Python package
     :return: None
     """
+    github_user = DATABASE.get_github_user()
     content = (f"""# {project_name}
 
-    [![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)
+[![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)
 
-    {description}
+{description}
 
-    - **[Telegram channel](https://t.me/crocofactory)**
-    - **[Bug reports](https://github.com/{GITHUB_USER_LOGIN}/{project_name}/issues)**
+- **[Telegram channel](https://t.me/crocofactory)**
+- **[Bug reports](https://github.com/{github_user['login']}/{project_name}/issues)**
 
-    Source code is made available under the [MIT License](LICENSE)""")
+Source code is made available under the [MIT License](LICENSE)""")
 
     if is_package:
         content += '# Installing {project_name}'
 
         if open_source:
             content += (f"""
-        To install `{project_name}` from PyPi, you can use that:
-    
-        ```shell
-        pip install {project_name}
-        ```
-        """)
+To install `{project_name}` from PyPi, you can use that:
+
+```shell
+pip install {project_name}
+```
+""")
             content += (f"""
-        To install `{project_name}` from GitHub, use that:
-    
-        ```shell
-        pip install git+https://github.com/{GITHUB_USER_LOGIN}/{project_name}.git
-        ```""")
+To install `{project_name}` from GitHub, use that:
+
+```shell
+pip install git+https://github.com/{github_user['login']}/{project_name}.git
+```""")
         else:
             content += (f"""
-        To install `{project_name}` you need to get GitHub API token. After you need to replace this token instead of `<TOKEN>`:
-    
-        ```shell
-        pip install git+https://<TOKEN>@github.com/{GITHUB_USER_LOGIN}/{project_name}.git
-        ```""")
+To install `{project_name}` you need to get GitHub API token. After you need to replace this token instead of `<TOKEN>`:
+
+```shell
+pip install git+https://<TOKEN>@github.com/{github_user['login']}/{project_name}.git
+```""")
 
     with open('README.md', 'w') as readme_file:
         readme_file.write(content)
 
 
 @init.command()
+@require_github
 def package() -> None:
     """Initialize the package directory"""
     repo_name = os.path.basename(os.getcwd())
@@ -234,6 +240,7 @@ def package() -> None:
 
 
 @init.command()
+@require_github
 def project() -> None:
     """Initialize the project directory"""
     repo_name = os.path.basename(os.getcwd())

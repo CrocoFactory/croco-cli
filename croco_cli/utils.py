@@ -1,12 +1,14 @@
 """
 Utility functions for croco-cli
 """
-
+import os
 import re
 import curses
-from typing import Any
+from typing import Any, Callable
+import click
 from croco_cli.types import Option
-from functools import partial
+from functools import partial, wraps
+from .globals import DATABASE
 
 
 def snake_case(s: str) -> str:
@@ -85,3 +87,19 @@ def show_key_mode(
     """
     handler = partial(_show_key_mode, options, command_description)
     curses.wrapper(handler)
+
+
+def require_github(func: Callable):
+    """Require a GitHub API token in order to run the command """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not DATABASE.github_user.table_exists():
+            env_token = os.environ.get("GITHUB_ACCESS_TOKEN")
+            if env_token:
+                DATABASE.set_github_user(env_token)
+            else:
+                token = click.prompt('GitHub access token is missing. Set it to continue', hide_input=True)
+                DATABASE.set_github_user(token)
+
+        return func(*args, **kwargs)
+    return wrapper

@@ -6,8 +6,8 @@ import os
 import click
 from functools import partial
 from croco_cli.types import Option, Package, GithubPackage
-from croco_cli.utils import show_key_mode
-from croco_cli.globals import PYPI_PACKAGES, GITHUB_PACKAGES, GITHUB_API_TOKEN
+from croco_cli.utils import show_key_mode, require_github
+from croco_cli.globals import PYPI_PACKAGES, GITHUB_PACKAGES, DATABASE
 
 _DESCRIPTION = "Install Croco Factory packages"
 
@@ -39,6 +39,7 @@ def _install_package(
     os.system(command)
 
 
+@require_github
 def _make_install_option(
         package: Package | GithubPackage,
         *,
@@ -50,11 +51,12 @@ def _make_install_option(
     :param github_package:
     :return: An installing option
     """
+    github_user = DATABASE.get_github_user()
     package_name = package['name']
     description = package['description']
 
     if github_package:
-        package['access_token'] = GITHUB_API_TOKEN
+        package['access_token'] = github_user['access_token']
         package_name += ' (GitHub)'
 
     handler = partial(
@@ -84,6 +86,7 @@ def _show_install_screen() -> None:
 
 
 @click.command(help=_DESCRIPTION)
+@require_github
 def install():
     _show_install_screen()
 

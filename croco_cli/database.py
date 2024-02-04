@@ -31,22 +31,21 @@ class Database:
                 database = Database._database
                 table_name = 'github_users'
 
-        self._github_user_table = GithubUserModel
-        self._build_database()
+        self._github_user = GithubUserModel
 
     @property
-    def github_user_table(self) -> Type[Model]:
+    def github_user(self) -> Type[Model]:
         """
         :return: the database model for the GitHub user table
         """
-        return self._github_user_table
+        return self._github_user
 
     def get_github_user(self) -> GithubUser:
         """
         Returns the info about the GitHub user
         :return: The info about the GitHub user represented as GithubUser dictionary
         """
-        query = self.github_user_table.select()
+        query = self.github_user.select()
 
         for user in query:
             return GithubUser(
@@ -57,32 +56,35 @@ class Database:
                 access_token=user.access_token
             )
 
-    def _build_github_user(self) -> None:
-        github_user = self._github_user_table
+    def set_github_user(self, token: str) -> None:
+        """
+        Sets the GitHub user using a personal access token
+        :param token: A personal access token
+        :return: None
+        """
+        github_user = self._github_user
         database = self._database
 
-        if not github_user.table_exists():
-            token = os.environ.get('GITHUB_API_TOKEN')
-            _auth = Auth.Token(token)
+        if github_user.table_exists():
+            github_user.delete().execute()
 
-            with Github(auth=_auth) as github_api:
-                user = github_api.get_user()
-                _emails = user.get_emails()
+        _auth = Auth.Token(token)
 
-                for email in _emails:
-                    if email.primary:
-                        user_email = email.email
-                        break
+        with Github(auth=_auth) as github_api:
+            user = github_api.get_user()
+            _emails = user.get_emails()
 
-            database.create_tables([github_user])
+            for email in _emails:
+                if email.primary:
+                    user_email = email.email
+                    break
 
-            github_user.create(
-                data=pickle.dumps(user),
-                login=user.login,
-                name=user.name,
-                email=user_email,
-                access_token=token
-            )
+        database.create_tables([github_user])
 
-    def _build_database(self):
-        self._build_github_user()
+        github_user.create(
+            data=pickle.dumps(user),
+            login=user.login,
+            name=user.name,
+            email=user_email,
+            access_token=token
+        )
