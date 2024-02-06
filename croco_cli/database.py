@@ -4,11 +4,12 @@ This module provides a database interface
 
 import os
 import pickle
+from eth_account import Account
 from github import Auth
 from github import Github
-from typing import ClassVar, Type
-from croco_cli.types import GithubUser
-from peewee import Model, CharField, BlobField, SqliteDatabase
+from typing import ClassVar, Type, Optional
+from croco_cli.types import GithubUser, Wallet
+from peewee import Model, CharField, BlobField, SqliteDatabase, BooleanField
 
 _CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,7 +32,18 @@ class Database:
                 database = Database._database
                 table_name = 'github_users'
 
+        class WalletModel(Model):
+            public_key = CharField(unique=True)
+            private_key = CharField(unique=True)
+            current = BooleanField()
+            label = CharField(null=True)
+
+            class Meta:
+                database = Database._database
+                table_name = 'wallets'
+
         self._github_user = GithubUserModel
+        self._wallets = WalletModel
 
     @property
     def github_user(self) -> Type[Model]:
@@ -39,6 +51,30 @@ class Database:
         :return: the database model for the GitHub user table
         """
         return self._github_user
+
+    @property
+    def wallets(self) -> Type[Model]:
+        """
+        :return: the database model for the Wallet
+        """
+        return self._wallets
+
+    def get_wallets(self) -> list[Wallet]:
+        """
+        Returns a list of all ethereum wallets of the user
+        :return: a list of all ethereum wallets of the user
+        """
+        query = self.wallets.select()
+        wallets = [
+            Wallet(
+                public_key=wallet.public_key,
+                private_key=wallet.private_key,
+                current=wallet.current,
+                label=wallet.label
+            )
+            for wallet in query
+        ]
+        return wallets
 
     def get_github_user(self) -> GithubUser:
         """
@@ -88,3 +124,49 @@ class Database:
             email=user_email,
             access_token=token
         )
+
+    @staticmethod
+    def get_public_key(private_key: str) -> str:
+        """
+        Get public key from a private key
+        :param private_key: The private key
+        :return: The public key
+        """
+        account = Account.from_key(private_key)
+        public_key = account.address
+        return public_key
+
+    def set_wallet(self, private_key: str, label: Optional[str] = None) -> None:
+        """
+        Sets the wallet using a private key and a label
+        :param private_key: Private key of the wallet
+        :param label: Label for the wallet
+        :return: None
+        """
+        wallets = self._wallets
+        database = self._database
+
+        database.create_tables([wallets])
+
+        existing_wallets = wallets.select().where(wallets.private_key == private_key)
+
+        current_wallets = wallets.select().where(wallets.current)
+        if len(current_wallets) == 1:
+            for current_wallet in current_wallets:
+                current_wallet.current = False
+                current_wallet.save()
+                break
+
+        if len(existing_wallets) == 1:
+            for wallet in existing_wallets:
+                wallet.current = True
+                wallet.save()
+                break
+        else:
+            public_key = self.get_public_key(private_key)
+            wallets.create(
+                public_key=public_key,
+                private_key=private_key,
+                current=True,
+                label=label
+            )

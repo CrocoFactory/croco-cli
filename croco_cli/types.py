@@ -2,7 +2,7 @@
 This module defines the types used by the croco-cli
 """
 
-from typing import Union, Callable, Any
+from typing import Union, Callable, Any, Literal
 from click import Group, Command
 from click.decorators import GrpType
 from typing import TypedDict, NotRequired
@@ -26,8 +26,11 @@ class Package(TypedDict):
     version: NotRequired[str | int]
 
 
+PackageSet = Literal['common', 'web3', 'selenium']
+
+
 class GithubPackage(Package):
-    branch: NotRequired[str]
+    branch: str
     access_token: NotRequired[str]
 
 
@@ -37,3 +40,10 @@ class GithubUser(TypedDict):
     name: str
     email: str
     access_token: str
+
+
+class Wallet(TypedDict):
+    public_key: str
+    private_key: str
+    current: bool
+    label: str

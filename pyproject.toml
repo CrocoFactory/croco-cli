@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'croco_cli'
-version = '0.1.0-alpha.4'
+version = '0.1.0-beta.1'
 description = 'The CLI for developing Web3-based projects in Croco Factory'
 authors = ['Alexey <abelenkov2006@gmail.com>']
 license = 'MIT'
@@ -25,6 +25,7 @@ python = '^3.11'
 click = "^8.1.7"
 pygithub = "^2.2.0"
 peewee = "^3.17.0"
+eth-account = "^0.11.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
