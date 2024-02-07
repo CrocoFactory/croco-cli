@@ -1,26 +1,41 @@
 """
 This module provides a database interface
 """
-
 import os
 import pickle
+import getpass
 from eth_account import Account
 from github import Auth
 from github import Github
-from typing import ClassVar, Type, Optional
+from typing import Type, Optional, ClassVar
 from croco_cli.types import GithubUser, Wallet
 from peewee import Model, CharField, BlobField, SqliteDatabase, BooleanField
 
-_CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
+
+def _get_cache_folder() -> str:
+    username = getpass.getuser()
+    os_name = os.name
+
+    if os_name == "posix":
+        cache_path = f'/Users/{username}/.cache/croco_cli'
+    elif os_name == "nt":
+        cache_path = f'C:\\Users\\{username}\\AppData\\Local\\croco_cli'
+    else:
+        raise OSError(f"Unsupported Operating System {os_name}")
+
+    try:
+        os.chdir(cache_path)
+    except FileNotFoundError:
+        os.mkdir(cache_path)
+
+    return cache_path
 
 
 class Database:
-    _path: ClassVar[str] = os.path.join(_CURRENT_PATH, 'user.db')
-    _database: ClassVar[SqliteDatabase] = SqliteDatabase(_path)
+    _path: ClassVar[str] = os.path.join(_get_cache_folder(), 'user.db')
+    interface: ClassVar[SqliteDatabase] = SqliteDatabase(_path)
 
     def __init__(self):
-        self.path = self._path
-
         class GithubUserModel(Model):
             data = BlobField()
             login = CharField(unique=True)
@@ -29,7 +44,7 @@ class Database:
             access_token = CharField(unique=True)
 
             class Meta:
-                database = Database._database
+                database = Database.interface
                 table_name = 'github_users'
 
         class WalletModel(Model):
@@ -39,7 +54,7 @@ class Database:
             label = CharField(null=True)
 
             class Meta:
-                database = Database._database
+                database = Database.interface
                 table_name = 'wallets'
 
         self._github_user = GithubUserModel
@@ -99,7 +114,7 @@ class Database:
         :return: None
         """
         github_user = self._github_user
-        database = self._database
+        database = self.interface
 
         if github_user.table_exists():
             github_user.delete().execute()
@@ -125,6 +140,14 @@ class Database:
             access_token=token
         )
 
+    def delete_github_user(self, token: str) -> None:
+        github_user = self._github_user
+        github_user.delete().where(github_user.access_token == token).execute()
+
+    def delete_wallet(self, private_key: str) -> None:
+        wallets_table = self._wallets
+        wallets_table.delete().where(wallets_table.private_key == private_key).execute()
+
     @staticmethod
     def get_public_key(private_key: str) -> str:
         """
@@ -144,7 +167,7 @@ class Database:
         :return: None
         """
         wallets = self._wallets
-        database = self._database
+        database = self.interface
 
         database.create_tables([wallets])
 
@@ -170,3 +193,6 @@ class Database:
                 current=True,
                 label=label
             )
+
+
+database = Database()

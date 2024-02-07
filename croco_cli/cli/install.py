@@ -7,7 +7,8 @@ import click
 from functools import partial
 from croco_cli.types import Option, Package, GithubPackage, PackageSet
 from croco_cli.utils import show_key_mode, require_github, is_github_package
-from croco_cli.globals import PYPI_PACKAGES, GITHUB_PACKAGES, DATABASE, PACKAGE_SETS
+from croco_cli.globals import PYPI_PACKAGES, GITHUB_PACKAGES, PACKAGE_SETS
+from croco_cli.database import database
 
 _DESCRIPTION = "Install Croco Factory packages"
 
@@ -46,7 +47,7 @@ def _make_install_option(
     :param package: package to install
     :return: An installing option
     """
-    github_user = DATABASE.get_github_user()
+    github_user = database.get_github_user()
     package_name = package['name']
     description = package['description']
     github_package = is_github_package(package)
@@ -116,14 +117,6 @@ def _show_install_screen(set_mode: bool) -> None:
 
 @click.command(help=_DESCRIPTION)
 @click.option(
-    '-k/-nk',
-    '--keyboard/--args',
-    help='Enable keyboard mode or disable keyboard mode',
-    show_default=True,
-    is_flag=True,
-    default=True
-)
-@click.option(
     '-s',
     '--set',
     'set_',
@@ -133,6 +126,5 @@ def _show_install_screen(set_mode: bool) -> None:
     default=False
 )
 @require_github
-def install(set_: bool, keyboard: bool):
-    if keyboard:
-        _show_install_screen(set_)
+def install(set_: bool):
+    _show_install_screen(set_)

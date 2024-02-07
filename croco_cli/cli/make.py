@@ -1,6 +1,6 @@
 import click
 from croco_cli.utils import require_wallet
-from croco_cli.globals import DATABASE
+from croco_cli.database import database
 
 
 @click.group()
@@ -12,7 +12,7 @@ def make():
 @require_wallet
 def dotenv():
     """Make file with environment variables. Use with python-dotenv"""
-    wallets = DATABASE.get_wallets()
+    wallets = database.get_wallets()
     current_wallet = next(filter(lambda wallet: wallet['current'], wallets))
 
     with open('.env', 'w') as file:

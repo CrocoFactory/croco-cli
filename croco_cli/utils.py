@@ -4,11 +4,12 @@ Utility functions for croco-cli
 import os
 import re
 import curses
+import getpass
 from typing import Any, Callable
 import click
 from croco_cli.types import Option, Wallet, Package, GithubPackage
 from functools import partial, wraps
-from croco_cli.globals import DATABASE
+from croco_cli.database import database
 
 
 def snake_case(s: str) -> str:
@@ -34,6 +35,7 @@ def is_github_package(package: Package | GithubPackage) -> bool:
 def _show_key_mode(
         options: list[Option],
         command_description: str,
+        use_delete: bool,
         stdscr: curses.window
 ) -> Any:
     """
@@ -84,8 +86,15 @@ def _show_key_mode(
                 current_option += 1
             else:
                 current_option = 0
-        elif key == curses.KEY_BACKSPACE:
-            pass
+        elif key == 127 and options[current_option]['name'] != 'Exit' and use_delete:
+            options[current_option]['deleting_handler']()
+            options.pop(current_option)
+            stdscr.clear()
+            if len(options) > 1:
+                current_option = max(current_option - 1, current_option + 1)
+            else:
+                curses.endwin()
+                return
         elif key == 10:
             selected_option = options[current_option]
             stdscr.refresh()
@@ -97,15 +106,17 @@ def _show_key_mode(
 def show_key_mode(
         options: list[Option],
         command_description: str,
+        use_delete: bool = False
 ) -> None:
     """
     Shows keyboard interaction mode for the given options
 
     :param options: list of options to display on the screen
     :param command_description: description of the command
+    :param use_delete: whether to delete options and execute deleting handler when backspace key is pressed.
     :return: None
     """
-    handler = partial(_show_key_mode, options, command_description)
+    handler = partial(_show_key_mode, options, command_description, use_delete)
     curses.wrapper(handler)
 
 
@@ -120,14 +131,14 @@ def require_github(func: Callable):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not DATABASE.github_user.table_exists():
+        if not database.github_user.table_exists():
             env_token = os.environ.get("GITHUB_ACCESS_TOKEN")
             if env_token:
-                DATABASE.set_github_user(env_token)
+                database.set_github_user(env_token)
             else:
                 echo_warn_mark()
                 token = click.prompt('GitHub access token is missing. Set it to continue', hide_input=True)
-                DATABASE.set_github_user(token)
+                database.set_github_user(token)
 
         return func(*args, **kwargs)
 
@@ -136,16 +147,17 @@ def require_github(func: Callable):
 
 def require_wallet(func: Callable):
     """Require a Wallet in order to run the command"""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not DATABASE.wallets.table_exists():
+        if not database.wallets.table_exists():
             env_token = os.environ.get("TEST_PRIVATE_KEY")
             if env_token:
-                DATABASE.set_wallet(env_token)
+                database.set_wallet(env_token)
             else:
                 echo_warn_mark()
                 token = click.prompt('Wallet private key is missing. Set it to continue', hide_input=True)
-                DATABASE.set_wallet(token)
+                database.set_wallet(token)
         return func(*args, **kwargs)
 
     return wrapper
@@ -170,3 +182,22 @@ def sort_wallets(wallets: list[Wallet]) -> list[Wallet]:
 
     wallets = sorted(wallets, key=sort_by_key)
     return wallets
+
+
+def get_cache_folder() -> str:
+    username = getpass.getuser()
+    os_name = os.name
+
+    if os_name == "posix":
+        cache_path = f'/Users/{username}/.cache/croco_cli'
+    elif os_name == "nt":
+        cache_path = f'C:\\Users\\{username}\\AppData\\Local\\croco_cli'
+    else:
+        raise OSError(f"Unsupported Operating System {os_name}")
+
+    try:
+        os.chdir(cache_path)
+    except FileNotFoundError:
+        os.mkdir(cache_path)
+
+    return cache_path

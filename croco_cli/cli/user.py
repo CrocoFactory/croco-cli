@@ -1,9 +1,7 @@
-from typing import Optional
-
 import click
-from croco_cli.globals import DATABASE
-from croco_cli.types import Wallet
-from croco_cli.utils import require_github, sort_wallets
+from typing import Optional
+from croco_cli.database import database
+from croco_cli.utils import require_github, sort_wallets, require_wallet
 
 
 @click.command()
@@ -49,7 +47,7 @@ def _hide_value(value: str, begin_part: int, end_part: int = 8) -> str:
 
 def _show_github() -> None:
     """Show GitHub user account"""
-    github_user = DATABASE.get_github_user()
+    github_user = database.get_github_user()
     access_token = _hide_value(github_user['access_token'], 10)
     _show_label('GitHub')
     _show_detail('Login', github_user["login"])
@@ -57,9 +55,10 @@ def _show_github() -> None:
     _show_detail('Access token', access_token)
 
 
+@require_wallet
 def _show_wallets() -> None:
     """Show wallets of user"""
-    wallets = DATABASE.get_wallets()
+    wallets = database.get_wallets()
     wallets = sort_wallets(wallets)
     for wallet in wallets:
         label = f'{wallet["label"]} (Current)' if wallet["current"] else wallet['label']

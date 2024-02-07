@@ -5,7 +5,7 @@ This module contains functions to initialize python packages and projects
 import os
 import click 
 from croco_cli.utils import snake_case, require_github
-from croco_cli.globals import DATABASE
+from croco_cli.database import database
 
 
 @click.group()
@@ -27,7 +27,7 @@ def _add_poetry(
     :param is_package: Whether project should be configured as Python package
     :return: None
     """
-    github_user = DATABASE.get_github_user()
+    github_user = database.get_github_user()
 
     intended_audience = 'Intended Audience :: Customer Service' if not is_package else 'Intended Audience :: Developers'
 
@@ -95,7 +95,7 @@ def _initialize_folders(
     :param description: The description of the project
     :return: None
     """
-    github_user = DATABASE.get_github_user()
+    github_user = database.get_github_user()
     os.mkdir(snaked_name)
     os.chdir(snaked_name)
 
@@ -180,7 +180,7 @@ def _add_readme(
     :param is_package: Whether the readme should be configured for the Python package
     :return: None
     """
-    github_user = DATABASE.get_github_user()
+    github_user = database.get_github_user()
     content = (f"""# {project_name}
 
 [![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)

@@ -18,6 +18,7 @@ class Option(TypedDict):
     name: str
     description: str
     handler: AnyCallable
+    deleting_handler: NotRequired[AnyCallable]
 
 
 class Package(TypedDict):

@@ -1,9 +1,7 @@
 """
 Global variables used throughout the croco-cli
 """
-
 from croco_cli.types import Package, GithubPackage
-from croco_cli.database import Database
 
 _ADSPOWER = Package(name="adspower", description="AdsPower local API")
 _CROCO_SELENIUM = Package(name="croco-selenium", description="Interact with Selenium Web Driver actions")
@@ -43,5 +41,3 @@ PACKAGE_SETS = {
         'description': 'Package set to develop web3.py based projects'
     }
 }
-
-DATABASE = Database()
