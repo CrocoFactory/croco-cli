@@ -24,9 +24,9 @@ def _get_cache_folder() -> str:
         raise OSError(f"Unsupported Operating System {os_name}")
 
     try:
-        os.chdir(cache_path)
-    except FileNotFoundError:
         os.mkdir(cache_path)
+    except FileExistsError:
+        pass
 
     return cache_path
 
