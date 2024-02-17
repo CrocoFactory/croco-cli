@@ -44,10 +44,10 @@ def _show_wallet_screen() -> None:
 
 
 @_set.command()
-@click.argument('private_key', default=None, required=False)
-@click.argument('label', default=None, required=False)
+@click.argument('private_key', default=None, required=False, type=click.STRING)
+@click.argument('label', default=None, required=False, type=click.STRING)
 def wallet(private_key: str, label: Optional[str] = None) -> None:
-    """Change wallet for unit tests using its private key"""
+    """Set wallet for unit tests using its private key"""
     if not private_key:
         if database.wallets.table_exists():
             _show_wallet_screen()
@@ -60,11 +60,11 @@ def wallet(private_key: str, label: Optional[str] = None) -> None:
 
 
 @_set.command()
-@click.argument('access_token', default=None, required=False)
+@click.argument('access_token', default=None, required=False, type=click.STRING)
 def git(access_token: str):
-    """Change GitHub user account, using access token"""
+    """Set GitHub user account, using access token"""
     if not access_token:
         access_token = click.prompt('Please enter the access token of new account', hide_input=True)
 
     database.set_github(access_token)
-    _show_github()    
+    _show_github()

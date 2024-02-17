@@ -69,9 +69,9 @@ def _show_key_mode(
             description = option["description"].ljust(padded_description_len)
 
             if i == current_option:
-                stdscr.addstr(i + 2, 0, f"> {name} | {description}", curses.color_pair(1))
+                stdscr.addstr(i + 1, 0, f"> {name} | {description}", curses.color_pair(1))
             else:
-                stdscr.addstr(i + 2, 0, f"  {name} | {description}")
+                stdscr.addstr(i + 1, 0, f"  {name} | {description}")
 
         key = stdscr.getch()
 
@@ -99,7 +99,6 @@ def _show_key_mode(
             selected_option = options[current_option]
             stdscr.refresh()
             curses.endwin()
-
             return selected_option['handler']()
 
 

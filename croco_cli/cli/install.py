@@ -58,8 +58,7 @@ def _make_install_option(
 
     handler = partial(
         _install_package,
-        package=package,
-        github_package=github_package
+        package=package
     )
 
     return Option(
