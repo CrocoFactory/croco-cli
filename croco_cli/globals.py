@@ -4,7 +4,7 @@ Global variables used throughout the croco-cli
 from croco_cli.types import Package, GithubPackage
 
 _ADSPOWER = Package(name="adspower", description="AdsPower local API")
-_CROCO_SELENIUM = Package(name="croco-selenium", description="Interact with Selenium actions")
+# _CROCO_SELENIUM = Package(name="croco-selenium", description="Interact with Selenium actions")
 _EVM_EXTRAS = Package(name="evm-extras", description="Utilities to develop Web3-based projects")
 _EVM_WALLET = Package(name="evm-wallet", description="Wrapper over web3.py operations")
 _PYTEST_EVM = Package(name="pytest-evm", description="Tools to test web3-based projects")
@@ -15,7 +15,7 @@ _SELDEGEN = GithubPackage(name="seldegen", description="Utilities to develop Sel
 
 PYPI_PACKAGES = (
     _ADSPOWER,
-    _CROCO_SELENIUM,
+    # _CROCO_SELENIUM,
     _EVM_EXTRAS,
     _EVM_WALLET,
     _PYTEST_EVM,
@@ -33,7 +33,11 @@ PACKAGE_SETS = {
         'description': 'Common package set for any project'
     },
     'selenium': {
-        'packages': (_ADSPOWER, _CROCO_SELENIUM, _SELDEGEN),
+        'packages': (
+            _ADSPOWER,
+             # _CROCO_SELENIUM,
+             _SELDEGEN
+        ),
         'description': 'Package set to develop selenium based projects'
     },
     'web3': {

@@ -1,6 +1,7 @@
 """
 This module provides a database interface
 """
+import json
 import os
 import pickle
 import getpass
@@ -8,7 +9,7 @@ from eth_account import Account
 from github import Auth
 from github import Github
 from typing import Type, Optional, ClassVar
-from croco_cli.types import GithubUser, Wallet
+from croco_cli.types import GithubUser, Wallet, CustomAccount
 from peewee import Model, CharField, BlobField, SqliteDatabase, BooleanField
 
 
@@ -57,8 +58,21 @@ class Database:
                 database = Database.interface
                 table_name = 'wallets'
 
+        class CustomAccountModel(Model):
+            account = CharField()
+            password = CharField()
+            email = CharField()
+            email_password = CharField()
+            current = BooleanField()
+            data = CharField(null=True)
+
+            class Meta:
+                database = Database.interface
+                table_name = 'custom_accounts'
+
         self._github_user = GithubUserModel
         self._wallets = WalletModel
+        self._custom_account = CustomAccountModel
 
     @property
     def github_user(self) -> Type[Model]:
@@ -73,6 +87,13 @@ class Database:
         :return: the database model for the Wallet
         """
         return self._wallets
+
+    @property
+    def custom_account(self) -> Type[Model]:
+        """
+        :return: the database model for the Custom Account table
+        """
+        return self._custom_account
 
     def get_wallets(self) -> list[Wallet]:
         """
@@ -193,6 +214,98 @@ class Database:
                 current=True,
                 label=label
             )
+
+    def get_custom_accounts(
+            self,
+            account: Optional[str] = None,
+            current: bool = False
+    ) -> list[CustomAccount]:
+        """
+        Returns list of custom accounts of user
+        :param account: A name of accounts
+        :param current: Whether accounts should be current
+        :return:
+        """
+        custom_account = self._custom_account
+        if account:
+            query = custom_account.select().where(custom_account.account == account)
+        else:
+            query = self.custom_account.select()
+
+        if current:
+            query = filter(lambda current_account: current_account.current, query)
+
+        accounts = [
+            CustomAccount(
+                account=account.account,
+                password=account.password,
+                current=account.current,
+                email=account.email,
+                email_password=account.email_password,
+                data=account.data
+            )
+            for account in query
+        ]
+        return accounts
+
+    def set_custom_account(
+            self,
+            account: str,
+            password: str,
+            email: str,
+            email_password: Optional[str] = None,
+            data: Optional[dict[str, str]] = None
+    ) -> None:
+        """
+        Sets a custom user account
+        :param account: A name of account
+        :param password: Password
+        :param email: Email login
+        :param email_password: Email password. If not provided, the password will be used as the password for the account
+        :param data: Custom user data
+        :return: None
+        """
+        custom_account = self._custom_account
+        database = self.interface
+
+        database.create_tables([custom_account])
+
+        existing_accounts = custom_account.select().where(custom_account.account == account)
+
+        skip_creating = False
+        if len(existing_accounts) > 0:
+            for existing_account in existing_accounts:
+                if existing_account.email == email:
+                    existing_account.current = True
+                    existing_account.save()
+                    skip_creating = True
+                    continue
+
+                if existing_account.current:
+                    existing_account.current = False
+                    existing_account.save()
+
+        if not skip_creating:
+            custom_account.create(
+                account=account,
+                password=password,
+                current=True,
+                email=email,
+                email_password=email_password,
+                data=json.dumps(data)
+            )
+
+    def delete_custom_accounts(self, account: str, email: str) -> None:
+        """
+        Delete custom user accounts
+        :param account: A name of accounts
+        :param email: Email of accounts
+        :return: None
+        """
+        custom_account = self._custom_account
+        custom_account.delete().where(
+            custom_account.account == account and custom_account.email == email
+        ).execute()
 
 
 database = Database()

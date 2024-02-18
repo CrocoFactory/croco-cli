@@ -1,9 +1,9 @@
 import click
 from typing import Optional
 from croco_cli.database import database
-from .user import _show_github, _show_wallets
-from croco_cli.utils import show_key_mode, sort_wallets
-from croco_cli.types import Wallet, Option
+from croco_cli.types import CustomAccount, Wallet
+from .user import _show_github, _show_custom_account
+from ..utils import show_wallet
 
 
 @click.group(name='set')
@@ -11,52 +11,15 @@ def _set():
     """Change settings or user details for accounts"""
 
 
-def _make_wallet_option(wallet: Wallet) -> Option:
-    """Create a new wallet option for keyboard interactive mode"""
-    label = wallet['label']
-
-    def _handler():
-        database.set_wallet(wallet['private_key'], label)
-
-    def _delete_handler():
-        database.delete_wallet(wallet['private_key'])
-
-    if wallet["current"]:
-        label = f'{label} (Current)'
-
-    option = Option(
-        name=label,
-        description=wallet['public_key'],
-        handler=_handler,
-        deleting_handler=_delete_handler
-    )
-
-    return option
-
-
-def _show_wallet_screen() -> None:
-    """Show wallet selection screen"""
-    wallets = database.get_wallets()
-    wallets = sort_wallets(wallets)
-
-    options = [_make_wallet_option(wallet) for wallet in wallets]
-    show_key_mode(options, 'Change wallet for unit tests', True)
-
-
 @_set.command()
-@click.argument('private_key', default=None, required=False, type=click.STRING)
+@click.argument('private_key', default=None, type=click.STRING)
 @click.argument('label', default=None, required=False, type=click.STRING)
 def wallet(private_key: str, label: Optional[str] = None) -> None:
     """Set wallet for unit tests using its private key"""
-    if not private_key:
-        if database.wallets.table_exists():
-            _show_wallet_screen()
-            return
-        else:
-            private_key = click.prompt('Please enter the private key of new account', hide_input=True)
-
     database.set_wallet(private_key, label)
-    _show_wallets()
+    public_key = database.get_public_key(private_key)
+    current_wallet = Wallet(private_key=private_key, public_key=public_key, current=True, label=label)
+    show_wallet(current_wallet)
 
 
 @_set.command()
@@ -68,3 +31,43 @@ def git(access_token: str):
 
     database.set_github(access_token)
     _show_github()
+
+
+@_set.command()
+@click.option(
+    '--keyvalue',
+    '-kv',
+    'fields',
+    help='Set an additional user field',
+    nargs=2,
+    multiple=True,
+    type=(click.STRING, click.STRING)
+)
+@click.argument('account', type=click.STRING)
+@click.argument('password', type=click.STRING)
+@click.argument('email', type=click.STRING)
+@click.argument('email_password', type=click.STRING, required=False)
+def custom(
+        fields: list[tuple[str, str]],
+        account: str,
+        password: str,
+        email: str,
+        email_password: Optional[str] = None
+) -> None:
+    """Set a custom user account"""
+    email_password = email_password or password
+
+    data = {key: value for key, value in fields}
+
+    database.set_custom_account(account, password, email, email_password, data)
+
+    custom_account = CustomAccount(
+        account=account,
+        password=password,
+        email=email,
+        current=True,
+        email_password=email_password,
+        data=data
+    )
+
+    _show_custom_account(custom_account)

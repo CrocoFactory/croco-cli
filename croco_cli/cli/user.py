@@ -1,11 +1,13 @@
+import json
 import click
-from typing import Optional
 from croco_cli.database import database
-from croco_cli.utils import require_github, sort_wallets, require_wallet
+from croco_cli.types import CustomAccount
+from croco_cli.utils import require_github, show_detail, show_label, hide_value, show_account_dict, show_wallets
 
 
 @click.command()
 @click.option(
+    '-g',
     '--git',
     help='Show GitHub user account',
     show_default=True,
@@ -13,57 +15,57 @@ from croco_cli.utils import require_github, sort_wallets, require_wallet
     default=True
 )
 @click.option(
+    '-w',
     '--wallets',
     help='Show wallets of user',
     show_default=True,
     is_flag=True,
     default=False
 )
+@click.option(
+    '-c',
+    '--custom',
+    help='Show custom accounts of user',
+    show_default=True,
+    is_flag=True,
+    default=False
+)
 @require_github
-def user(git: bool, wallets: bool) -> None:
+def user(git: bool, wallets: bool, custom: bool) -> None:
     """Show user accounts"""
     if wallets:
-        _show_wallets()
-        return
-    if git:
+        show_wallets()
+    elif custom:
+        _show_custom_accounts()
+    elif git:
         _show_github()
-
-
-def _show_label(label: str, padding: Optional[int] = 0) -> None:
-    padding = '     ' * padding
-    click.echo(click.style(f'{padding}[{label}]', fg='blue', bold=True))
-
-
-def _show_detail(key: str, value: str, padding: Optional[int] = 1) -> None:
-    padding = '     ' * padding
-    click.echo(click.style(f'{padding}{key}: ', fg='magenta'), nl=False)
-    click.echo(click.style(f'{value}', fg='green'))
-
-
-def _hide_value(value: str, begin_part: int, end_part: int = 8) -> str:
-    value = value[:begin_part] + '****...' + value[-end_part:]
-    return value
 
 
 def _show_github() -> None:
     """Show GitHub user account"""
     github_user = database.get_github_user()
-    access_token = _hide_value(github_user['access_token'], 10)
-    _show_label('GitHub')
-    _show_detail('Login', github_user["login"])
-    _show_detail('Email', github_user["email"])
-    _show_detail('Access token', access_token)
+    access_token = hide_value(github_user['access_token'], 10)
+    show_label('GitHub')
+    show_detail('Login', github_user["login"])
+    show_detail('Email', github_user["email"])
+    show_detail('Access token', access_token)
 
 
-@require_wallet
-def _show_wallets() -> None:
-    """Show wallets of user"""
-    wallets = database.get_wallets()
-    wallets = sort_wallets(wallets)
-    for wallet in wallets:
-        label = f'{wallet["label"]} (Current)' if wallet["current"] else wallet['label']
+def _show_custom_account(custom_account: CustomAccount) -> None:
+    """Show custom accounts of user"""
+    custom_data = custom_account.pop('data')
+    current = custom_account.pop('current')
+    if isinstance(custom_data, str):
+        custom_data = json.loads(custom_data)
 
-        private_key = _hide_value(wallet["private_key"], 5, 5)
-        _show_label(f'{label}')
-        _show_detail('Public Key', wallet['public_key'])
-        _show_detail('Private Key', private_key)
+    label = f'{custom_account.pop("account").capitalize()} (Current)' if current else custom_account.pop('account').capitalize()
+    show_account_dict(custom_account, label)
+
+    custom_data and show_account_dict(custom_data)
+
+
+def _show_custom_accounts() -> None:
+    """Show custom accounts of user"""
+    custom_accounts = database.get_custom_accounts()
+    for custom_account in custom_accounts:
+        _show_custom_account(custom_account)

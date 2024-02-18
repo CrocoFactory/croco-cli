@@ -4,6 +4,7 @@ Binding functions to CLI commands
 
 import click
 from typing import cast
+from .change import change
 from .init import init
 from .install import install
 from .user import user
@@ -26,6 +27,7 @@ def cli():
     """
 
 
+cli.add_command(cast(ClickGroup, change))
 cli.add_command(cast(ClickGroup, init))
 cli.add_command(cast(ClickGroup, install))
 cli.add_command(cast(ClickGroup, user))

@@ -16,7 +16,7 @@ ClickCommand = Union[Callable[[Callable[..., Any]], Command], Command]
 
 class Option(TypedDict):
     name: str
-    description: str
+    description: NotRequired[str]
     handler: AnyCallable
     deleting_handler: NotRequired[AnyCallable]
 
@@ -48,3 +48,12 @@ class Wallet(TypedDict):
     private_key: str
     current: bool
     label: str
+
+
+class CustomAccount(TypedDict):
+    account: str
+    password: str
+    email: str
+    email_password: str
+    current: bool
+    data: NotRequired[dict[str, str]]
