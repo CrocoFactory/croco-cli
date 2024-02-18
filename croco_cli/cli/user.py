@@ -2,7 +2,7 @@ import json
 import click
 from croco_cli.database import database
 from croco_cli.types import CustomAccount
-from croco_cli.utils import require_github, show_detail, show_label, hide_value, show_account_dict, show_wallets
+from croco_cli.utils import require_github, show_detail, show_label, hide_value, show_account_dict, show_wallets, echo_error
 
 
 @click.command()
@@ -66,6 +66,10 @@ def _show_custom_account(custom_account: CustomAccount) -> None:
 
 def _show_custom_accounts() -> None:
     """Show custom accounts of user"""
+    if not database.custom_account.table_exists():
+        echo_error('There are no custom accounts to show')
+        return
+
     custom_accounts = database.get_custom_accounts()
     for custom_account in custom_accounts:
         _show_custom_account(custom_account)
