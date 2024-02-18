@@ -66,6 +66,7 @@ def _show_key_mode(
     curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Color pair for selected option
 
     stdscr.clear()
+
     stdscr.refresh()
 
     # Set up initial variables

@@ -6,7 +6,7 @@ from croco_cli.utils import show_key_mode, sort_wallets, echo_error, make_screen
 
 @click.group()
 def change():
-    """Change the current user accounts"""
+    """Change current user accounts"""
 
 
 def _make_wallet_option(wallet: Wallet) -> Option:
