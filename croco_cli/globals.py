@@ -35,8 +35,8 @@ PACKAGE_SETS = {
     'selenium': {
         'packages': (
             _ADSPOWER,
-             _CROCO_SELENIUM,
-             _SELDEGEN
+            _CROCO_SELENIUM,
+            _SELDEGEN
         ),
         'description': 'Package set to develop selenium based projects'
     },

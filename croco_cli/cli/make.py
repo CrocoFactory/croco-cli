@@ -18,7 +18,7 @@ def dotenv():
     current_wallet = next(filter(lambda wallet: wallet['current'], wallets))
 
     with open('.env', 'w') as file:
-        file.write(f"TEST_PRIVATE_KEY={current_wallet['private_key']}\n")
+        file.write(f"TEST_PRIVATE_KEY='{current_wallet['private_key']}'\n")
 
         for custom_account in custom_accounts:
             account = custom_account.pop('account')
@@ -26,8 +26,10 @@ def dotenv():
             custom_data = json.loads(custom_account.pop('data'))
             for key, value in custom_account.items():
                 key = constant_case(f'{account}_{key}')
-                file.write(f"{key}={value}\n")
+                file.write(f"{key}='{value}'\n")
 
             for key, value in custom_data.items():
                 key = constant_case(f'{account}_{key}')
-                file.write(f"{key}={value}\n")
+                file.write(f"{key}='{value}'\n")
+
+            file.write('\n')

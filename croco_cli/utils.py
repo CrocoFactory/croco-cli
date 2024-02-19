@@ -119,7 +119,10 @@ def _show_key_mode(
             options.pop(current_option)
             stdscr.clear()
             if len(options) > 1:
-                current_option = max(current_option - 1, current_option + 1)
+                if current_option > 0:
+                    current_option -= 1
+                else:
+                    current_option += 1
             else:
                 curses.endwin()
                 return
