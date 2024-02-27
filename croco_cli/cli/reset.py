@@ -35,15 +35,25 @@ from croco_cli.database import database
     is_flag=True,
     default=False
 )
-def reset(user: bool, git: bool, wallets: bool, custom: bool):
+@click.option(
+    '-e',
+    '--envar',
+    help='Reset environment variables accounts',
+    show_default=True,
+    is_flag=True,
+    default=False
+)
+def reset(user: bool, git: bool, wallets: bool, custom: bool, envar: bool):
     """Reset user accounts"""
-    if git or wallets or custom:
+    if git or wallets or custom or envar:
         if git:
             database.github_users.drop_table()
         if wallets:
             database.wallets.drop_table()
         if custom:
             database.custom_accounts.drop_table()
+        if envar:
+            database.envar_accounts.drop_table()
         return
     elif user:
         database.interface.drop_database()
