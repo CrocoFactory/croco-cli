@@ -73,6 +73,7 @@ def _add_packages(open_source: bool, is_package: bool) -> None:
     :return: None
     """
     os.system('poetry add -D pytest')
+    os.system('poetry add -D python-dotenv')
 
     if not is_package:
         os.system('poetry add loguru')

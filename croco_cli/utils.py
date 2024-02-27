@@ -211,7 +211,8 @@ def require_wallet(func: Callable):
                 return func(*args, **kwargs)
             else:
                 echo_warning('Wallet private key is missing. Set it to continue (croco set wallet).')
-
+        else:
+            return func(*args, **kwargs)
     return wrapper
 
 
