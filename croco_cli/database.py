@@ -112,12 +112,15 @@ class Database:
         """
         return self._env_variables
 
-    def get_wallets(self) -> list[Wallet]:
+    def get_wallets(self) -> list[Wallet] | None:
         """
         Returns a list of all ethereum wallets of the user
         :return: a list of all ethereum wallets of the user
         """
         query = self.wallets.select()
+        if not self.wallets.table_exists():
+            return None
+
         wallets = [
             Wallet(
                 public_key=wallet.public_key,
@@ -130,12 +133,14 @@ class Database:
         ]
         return wallets
 
-    def get_github_user(self) -> GithubUser:
+    def get_github_user(self) -> GithubUser | None:
         """
         Returns the info about the GitHub user
         :return: The info about the GitHub user represented as GithubUser dictionary
         """
         query = self.github_users.select()
+        if not self.github_users.table_exists():
+            return None
 
         for user in query:
             return GithubUser(
@@ -242,7 +247,7 @@ class Database:
             self,
             account: Optional[str] = None,
             current: bool = False
-    ) -> list[CustomAccount]:
+    ) -> list[CustomAccount] | None:
         """
         Returns list of custom accounts of user
         :param account: A name of accounts
@@ -250,6 +255,10 @@ class Database:
         :return:
         """
         custom_accounts = self._custom_accounts
+
+        if custom_accounts.table_exists():
+            return
+
         if account:
             query = custom_accounts.select().where(custom_accounts.account == account)
         else:
@@ -349,8 +358,11 @@ class Database:
                 value=value
             )
 
-    def get_env_variables(self) -> list[EnvVariable]:
+    def get_env_variables(self) -> list[EnvVariable] | None:
         env_variables = self._env_variables
+        if not env_variables.table_exists():
+            return 
+
         query = env_variables.select()
 
         return [
