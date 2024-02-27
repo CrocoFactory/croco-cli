@@ -256,7 +256,7 @@ class Database:
         """
         custom_accounts = self._custom_accounts
 
-        if custom_accounts.table_exists():
+        if not custom_accounts.table_exists():
             return
 
         if account:

@@ -71,5 +71,9 @@ def _show_custom_accounts() -> None:
         return
 
     custom_accounts = database.get_custom_accounts()
+    if not custom_accounts:
+        echo_error('There are no custom accounts to show')
+        return
+
     for custom_account in custom_accounts:
         _show_custom_account(custom_account)
