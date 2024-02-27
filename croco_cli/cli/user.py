@@ -66,7 +66,7 @@ def _show_custom_account(custom_account: CustomAccount) -> None:
 
 def _show_custom_accounts() -> None:
     """Show custom accounts of user"""
-    if not database.custom_account.table_exists():
+    if not database.custom_accounts.table_exists():
         echo_error('There are no custom accounts to show')
         return
 

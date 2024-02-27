@@ -46,6 +46,7 @@ class GithubUser(TypedDict):
 class Wallet(TypedDict):
     public_key: str
     private_key: str
+    mnemonic: NotRequired[str]
     current: bool
     label: str
 
@@ -57,3 +58,8 @@ class CustomAccount(TypedDict):
     email_password: str
     current: bool
     data: NotRequired[dict[str, str]]
+
+
+class EnvVariable(TypedDict):
+    key: str
+    value: str

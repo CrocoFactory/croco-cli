@@ -98,7 +98,7 @@ def custom():
         description = f'Change {key.capitalize()} account'
 
         def deleting_handler():
-            custom_accounts = database.custom_account
+            custom_accounts = database.custom_accounts
             custom_accounts.delete().where(custom_accounts.account == key).execute()
 
         screen_options.append(

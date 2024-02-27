@@ -9,7 +9,7 @@ from eth_account import Account
 from github import Auth
 from github import Github
 from typing import Type, Optional, ClassVar
-from croco_cli.types import GithubUser, Wallet, CustomAccount
+from croco_cli.types import GithubUser, Wallet, CustomAccount, EnvVariable
 from peewee import Model, CharField, BlobField, SqliteDatabase, BooleanField
 
 
@@ -51,6 +51,7 @@ class Database:
         class WalletModel(Model):
             public_key = CharField(unique=True)
             private_key = CharField(unique=True)
+            mnemonic = CharField(unique=True, null=True)
             current = BooleanField()
             label = CharField(null=True)
 
@@ -70,30 +71,46 @@ class Database:
                 database = Database.interface
                 table_name = 'custom_accounts'
 
-        self._github_user = GithubUserModel
+        class EnvVariableModel(Model):
+            key = CharField(unique=True)
+            value = CharField()
+
+            class Meta:
+                database = Database.interface
+                table_name = 'env_variables'
+
+        self._github_users = GithubUserModel
         self._wallets = WalletModel
-        self._custom_account = CustomAccountModel
+        self._custom_accounts = CustomAccountModel
+        self._env_variables = EnvVariableModel
 
     @property
-    def github_user(self) -> Type[Model]:
+    def github_users(self) -> Type[Model]:
         """
         :return: the database model for the GitHub user table
         """
-        return self._github_user
+        return self._github_users
 
     @property
     def wallets(self) -> Type[Model]:
         """
-        :return: the database model for the Wallet
+        :return: the database model for the wallet table
         """
         return self._wallets
 
     @property
-    def custom_account(self) -> Type[Model]:
+    def custom_accounts(self) -> Type[Model]:
         """
-        :return: the database model for the Custom Account table
+        :return: the database model for the custom Account table
         """
-        return self._custom_account
+        return self._custom_accounts
+
+    @property
+    def env_variables(self) -> Type[Model]:
+        """
+        :return: the database model for the environment variable table
+        """
+        return self._env_variables
 
     def get_wallets(self) -> list[Wallet]:
         """
@@ -105,6 +122,7 @@ class Database:
             Wallet(
                 public_key=wallet.public_key,
                 private_key=wallet.private_key,
+                mnemonic=wallet.mnemonic,
                 current=wallet.current,
                 label=wallet.label
             )
@@ -117,7 +135,7 @@ class Database:
         Returns the info about the GitHub user
         :return: The info about the GitHub user represented as GithubUser dictionary
         """
-        query = self.github_user.select()
+        query = self.github_users.select()
 
         for user in query:
             return GithubUser(
@@ -134,11 +152,11 @@ class Database:
         :param token: A personal access token
         :return: None
         """
-        github_user = self._github_user
-        database = self.interface
+        github_users = self._github_users
+        self.interface.create_tables([github_users])
 
-        if github_user.table_exists():
-            github_user.delete().execute()
+        if github_users.table_exists():
+            github_users.delete().execute()
 
         _auth = Auth.Token(token)
 
@@ -151,9 +169,7 @@ class Database:
                     user_email = email.email
                     break
 
-        database.create_tables([github_user])
-
-        github_user.create(
+        github_users.create(
             data=pickle.dumps(user),
             login=user.login,
             name=user.name,
@@ -162,7 +178,7 @@ class Database:
         )
 
     def delete_github_user(self, token: str) -> None:
-        github_user = self._github_user
+        github_user = self._github_users
         github_user.delete().where(github_user.access_token == token).execute()
 
     def delete_wallet(self, private_key: str) -> None:
@@ -180,11 +196,17 @@ class Database:
         public_key = account.address
         return public_key
 
-    def set_wallet(self, private_key: str, label: Optional[str] = None) -> None:
+    def set_wallet(
+            self,
+            private_key: str,
+            label: Optional[str] = None,
+            mnemonic: Optional[str] = None
+    ) -> None:
         """
         Sets the wallet using a private key and a label
         :param private_key: Private key of the wallet
         :param label: Label for the wallet
+        :param mnemonic: mnemonic of a wallet
         :return: None
         """
         wallets = self._wallets
@@ -211,6 +233,7 @@ class Database:
             wallets.create(
                 public_key=public_key,
                 private_key=private_key,
+                mnemonic=mnemonic,
                 current=True,
                 label=label
             )
@@ -226,11 +249,11 @@ class Database:
         :param current: Whether accounts should be current
         :return:
         """
-        custom_account = self._custom_account
+        custom_accounts = self._custom_accounts
         if account:
-            query = custom_account.select().where(custom_account.account == account)
+            query = custom_accounts.select().where(custom_accounts.account == account)
         else:
-            query = self.custom_account.select()
+            query = self.custom_accounts.select()
 
         if current:
             query = filter(lambda current_account: current_account.current, query)
@@ -265,12 +288,12 @@ class Database:
         :param data: Custom user data
         :return: None
         """
-        custom_account = self._custom_account
+        custom_accounts = self._custom_accounts
         database = self.interface
 
-        database.create_tables([custom_account])
+        database.create_tables([custom_accounts])
 
-        existing_accounts = custom_account.select().where(custom_account.account == account)
+        existing_accounts = custom_accounts.select().where(custom_accounts.account == account)
 
         skip_creating = False
         if len(existing_accounts) > 0:
@@ -286,7 +309,7 @@ class Database:
                     existing_account.save()
 
         if not skip_creating:
-            custom_account.create(
+            custom_accounts.create(
                 account=account,
                 password=password,
                 current=True,
@@ -302,10 +325,45 @@ class Database:
         :param email: Email of accounts
         :return: None
         """
-        custom_account = self._custom_account
-        custom_account.delete().where(
-            custom_account.account == account and custom_account.email == email
+        custom_accounts = self._custom_accounts
+        custom_accounts.delete().where(
+            custom_accounts.account == account and custom_accounts.email == email
         ).execute()
+
+    def set_env_variable(
+            self,
+            key: str,
+            value: str
+    ) -> None:
+        env_variables = self._env_variables
+        self.interface.create_tables([env_variables])
+
+        existing_variables = env_variables.select().where(env_variables.key == key)
+        if len(existing_variables):
+            for existing_variable in existing_variables:
+                existing_variable.value = value
+                break
+        else:
+            env_variables.create(
+                key=key,
+                value=value
+            )
+
+    def get_env_variables(self) -> list[EnvVariable]:
+        env_variables = self._env_variables
+        query = env_variables.select()
+
+        return [
+            EnvVariable(
+                key=env_variable.key,
+                value=env_variable.value
+            )
+            for env_variable in query
+        ]
+
+    def delete_env_variables(self) -> None:
+        env_variables = self._env_variables
+        env_variables.delete().execute()
 
 
 database = Database()

@@ -39,11 +39,11 @@ def reset(user: bool, git: bool, wallets: bool, custom: bool):
     """Reset user accounts"""
     if git or wallets or custom:
         if git:
-            database.github_user.drop_table()
+            database.github_users.drop_table()
         if wallets:
             database.wallets.drop_table()
         if custom:
-            database.custom_account.drop_table()
+            database.custom_accounts.drop_table()
         return
     elif user:
         database.interface.drop_database()

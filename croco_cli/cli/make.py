@@ -15,11 +15,21 @@ def dotenv():
     """Make file with environment variables. Use with python-dotenv"""
     wallets = database.get_wallets()
     custom_accounts = database.get_custom_accounts(current=True)
+    env_variables = database.get_env_variables()
     current_wallet = next(filter(lambda wallet: wallet['current'], wallets))
 
     with open('.env', 'w') as file:
+        file.write('# Wallet credential\n')
         file.write(f"TEST_PRIVATE_KEY='{current_wallet['private_key']}'\n")
+        file.write(f"TEST_MNEMONIC='{current_wallet['mnemonic']}'\n")
+        file.write("\n")
 
+        file.write('# Environment variables\n')
+        for env_var in env_variables:
+            file.write(f"{env_var['key']}='{env_var['value']}'\n")
+        file.write("\n")
+
+        file.write('# Custom account credentials\n')
         for custom_account in custom_accounts:
             account = custom_account.pop('account')
             custom_account.pop('current')

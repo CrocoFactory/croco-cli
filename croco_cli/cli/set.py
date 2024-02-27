@@ -3,7 +3,7 @@ from typing import Optional
 from croco_cli.database import database
 from croco_cli.types import CustomAccount, Wallet
 from .user import _show_github, _show_custom_account
-from ..utils import show_wallet
+from croco_cli.utils import show_wallet, show_detail, constant_case
 
 
 @click.group(name='set')
@@ -14,11 +14,18 @@ def _set():
 @_set.command()
 @click.argument('private_key', default=None, type=click.STRING)
 @click.argument('label', default=None, required=False, type=click.STRING)
-def wallet(private_key: str, label: Optional[str] = None) -> None:
+@click.argument('mnemonic', default=None, required=False, type=click.STRING)
+def wallet(private_key: str, label: Optional[str] = None, mnemonic: Optional[str] = None) -> None:
     """Set wallet for unit tests using its private key"""
-    database.set_wallet(private_key, label)
+    database.set_wallet(private_key, label, mnemonic)
     public_key = database.get_public_key(private_key)
-    current_wallet = Wallet(private_key=private_key, public_key=public_key, current=True, label=label)
+    current_wallet = Wallet(
+        private_key=private_key,
+        public_key=public_key,
+        mnemonic=mnemonic,
+        current=True,
+        label=label
+    )
     show_wallet(current_wallet)
 
 
@@ -71,3 +78,13 @@ def custom(
     )
 
     _show_custom_account(custom_account)
+
+
+@_set.command()
+@click.argument('key', type=click.STRING)
+@click.argument('value', type=click.STRING)
+def envar(key: str, value: str) -> None:
+    """Set an environment variable"""
+    key = constant_case(key)
+    database.set_env_variable(key, value)
+    show_detail(key, value, 0)

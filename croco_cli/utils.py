@@ -181,7 +181,7 @@ def require_github(func: Callable):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not database.github_user.table_exists():
+        if not database.github_users.table_exists():
             env_token = os.environ.get("GITHUB_ACCESS_TOKEN")
             if env_token:
                 database.set_github_user(env_token)
@@ -208,11 +208,9 @@ def require_wallet(func: Callable):
             env_token = os.environ.get("TEST_PRIVATE_KEY")
             if env_token:
                 database.set_wallet(env_token)
+                return func(*args, **kwargs)
             else:
-                echo_warning('Wallet private key is missing. Set it to continue')
-                token = click.prompt('', hide_input=True)
-                database.set_wallet(token)
-        return func(*args, **kwargs)
+                echo_warning('Wallet private key is missing. Set it to continue (croco set wallet).')
 
     return wrapper
 
@@ -378,6 +376,10 @@ def show_wallet(wallet: Wallet) -> None:
     show_label(f'{label}')
     show_detail('Public Key', wallet['public_key'])
     show_detail('Private Key', private_key)
+    if mnemonic := wallet.get('mnemonic'):
+        first_word_len = len(mnemonic.split()[0])
+        last_word_len = len(mnemonic.split()[-1])
+        show_detail('Mnemonic', hide_value(mnemonic, first_word_len, last_word_len))
 
 
 @require_wallet
@@ -392,4 +394,3 @@ def show_wallets() -> None:
     wallets = sort_wallets(wallets)
     for wallet in wallets:
         show_wallet(wallet)
-
