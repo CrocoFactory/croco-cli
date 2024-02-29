@@ -194,7 +194,7 @@ def _add_readme(
 Source code is made available under the [MIT License](LICENSE)""")
 
     if is_package:
-        content += '# Installing {project_name}'
+        content += f'\n# Installing {project_name}'
 
         if open_source:
             content += (f"""
