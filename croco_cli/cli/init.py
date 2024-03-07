@@ -166,6 +166,21 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())""")
+            with open('globals.py', 'w') as global_file:
+                global_file.write("""
+import os
+import tomllib
+
+PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
+SOURCE_PATH = os.path.join(PROJECT_PATH, 'gitcoin_passport')
+CONFIG_PATH = os.path.join(PROJECT_PATH, "config.toml")
+TESTS_PATH = os.path.join(PROJECT_PATH, 'tests')
+
+LOGS_PATH = os.path.join(PROJECT_PATH, "logs")
+with open(CONFIG_PATH, 'r') as config:
+    content = config.read()
+    CONFIG = tomllib.loads(content)
+""")
 
 
 def _add_readme(
@@ -194,7 +209,7 @@ def _add_readme(
 Source code is made available under the [MIT License](LICENSE)""")
 
     if is_package:
-        content += f'\n# Installing {project_name}'
+        content += f'\n\n# Installing {project_name}'
 
         if open_source:
             content += (f"""
