@@ -14,19 +14,18 @@ def init():
 
 
 def _add_poetry(
-        snaked_name: str,
         project_name: str,
         description: str,
         is_package: bool
 ) -> None:
     """
     Adds a pyproject.toml file
-    :param snaked_name: The name of the project in snake_case
     :param project_name: Name of the package
     :param description: The description of the project
     :param is_package: Whether project should be configured as Python package
     :return: None
     """
+    snaked_name = snake_case(project_name)
     github_user = database.get_github_user()
 
     intended_audience = 'Intended Audience :: Customer Service' if not is_package else 'Intended Audience :: Developers'
@@ -84,19 +83,18 @@ def _add_packages(open_source: bool, is_package: bool) -> None:
 
 
 def _initialize_folders(
-        snaked_name: str,
         project_name: str,
         description: str,
         is_package: bool
 ) -> None:
     """
     Initializes the project folders
-    :param snaked_name: The name of the project in snake_case
     :param project_name: Name of the package
     :param description: The description of the project
     :return: None
     """
     github_user = database.get_github_user()
+    snaked_name = snake_case(project_name)
     os.mkdir(snaked_name)
     os.chdir(snaked_name)
 
@@ -167,12 +165,12 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())""")
             with open('globals.py', 'w') as global_file:
-                global_file.write("""
+                global_file.write(f"""
 import os
 import tomllib
 
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
-SOURCE_PATH = os.path.join(PROJECT_PATH, 'gitcoin_passport')
+SOURCE_PATH = os.path.join(PROJECT_PATH, '{snaked_name}')
 CONFIG_PATH = os.path.join(PROJECT_PATH, "config.toml")
 TESTS_PATH = os.path.join(PROJECT_PATH, 'tests')
 
@@ -242,16 +240,15 @@ pip install git+https://<TOKEN>@github.com/{github_user['login']}/{project_name}
 def package() -> None:
     """Initialize the package directory"""
     repo_name = os.path.basename(os.getcwd())
-    snaked_name = snake_case(repo_name)
 
     description = click.prompt('Enter the package description')
 
     click.echo('The package will be configured as open-source package')
     open_source = click.confirm('Agree?')
 
-    _add_poetry(snaked_name, repo_name, description, True)
+    _add_poetry(repo_name, description, True)
     _add_packages(open_source, True)
-    _initialize_folders(snaked_name, repo_name, description, True)
+    _initialize_folders(repo_name, description, True)
     _add_readme(repo_name, description, open_source, True)
 
 
@@ -260,10 +257,9 @@ def package() -> None:
 def project() -> None:
     """Initialize the project directory"""
     repo_name = os.path.basename(os.getcwd())
-    snaked_name = snake_case(repo_name)
     description = click.prompt('Enter the project description')
 
-    _add_poetry(snaked_name, repo_name, description, False)
+    _add_poetry(repo_name, description, False)
     _add_packages(False, False)
-    _initialize_folders(snaked_name, repo_name, description, False)
+    _initialize_folders(repo_name, description, False)
     _add_readme(repo_name, description, False, False)
