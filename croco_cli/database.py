@@ -112,6 +112,13 @@ class Database:
         """
         return self._env_variables
 
+    def drop_database(self) -> None:
+        """
+        Drops the database
+        :return: None
+        """
+        self.interface.drop_tables([self.github_users, self.wallets, self.custom_accounts, self.env_variables])
+
     def get_wallets(self) -> list[Wallet] | None:
         """
         Returns a list of all ethereum wallets of the user
