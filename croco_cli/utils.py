@@ -169,7 +169,7 @@ def echo_warning(text: str) -> None:
     """
     click.echo(click.style(' ! ', bg='yellow'), nl=False)
     click.echo(' ', nl=False)
-    click.echo(click.style(text, fg='red'))
+    click.echo(click.style(text, fg='yellow'))
 
 
 def require_github(func: Callable):
