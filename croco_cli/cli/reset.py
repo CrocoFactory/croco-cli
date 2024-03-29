@@ -56,4 +56,4 @@ def reset(user: bool, git: bool, wallets: bool, custom: bool, envar: bool):
             database.env_variables.drop_table()
         return
     elif user:
-        database.interface.drop_tables([database.wallets, database.custom_accounts, database.env_variables])
+        database.drop_database()
