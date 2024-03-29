@@ -153,6 +153,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.""")
 
         if not is_package:
+            with open('config.toml', 'w'):
+                pass
+
             with open('main.py', 'w') as main_file:
                 main_file.write("""import loguru
 import asyncio
