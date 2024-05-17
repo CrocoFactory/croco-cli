@@ -9,9 +9,10 @@ _EVM_EXTRAS = Package(name="evm-extras", description="Utilities to develop Web3-
 _EVM_WALLET = Package(name="evm-wallet", description="Wrapper over web3.py operations")
 _PYTEST_EVM = Package(name="pytest-evm", description="Tools to test web3-based projects")
 _PYTHON_EXTRAS = Package(name="python-extras", description="Useful extras for Python")
+_SELDEGEN = Package(name="seldegen", description="Utilities to develop Selenium-based projects")
 
 _PY_OKX = GithubPackage(name="py-okx", description="OKX Exchange API", branch='main')
-_SELDEGEN = GithubPackage(name="seldegen", description="Utilities to develop Selenium-based projects", branch='test')
+
 
 PYPI_PACKAGES = (
     _ADSPOWER,
@@ -19,7 +20,8 @@ PYPI_PACKAGES = (
     _EVM_EXTRAS,
     _EVM_WALLET,
     _PYTEST_EVM,
-    _PYTHON_EXTRAS
+    _PYTHON_EXTRAS,
+    _SELDEGEN
 )
 
 GITHUB_PACKAGES = (
