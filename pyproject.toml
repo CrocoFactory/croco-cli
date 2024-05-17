@@ -1,0 +1,40 @@
+[tool.poetry]
+name = 'croco_cli'
+version = '0.1.0'
+description = 'The CLI for developing Web3-based projects in Croco Factory'
+authors = ['Alexey <abelenkov2006@gmail.com>']
+license = 'MIT'
+readme = 'README.md'
+repository = 'https://github.com/blnkoff/croco-cli'
+homepage = 'https://github.com/blnkoff/croco-cli'
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Developers',
+    'Topic :: Software Development :: Build Tools',
+    'Topic :: Software Development :: Version Control :: Git',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3 :: Only',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: MacOS'
+]
+packages = [{ include = 'croco_cli' }]
+
+[tool.poetry.dependencies]
+python = '^3.11'
+click = "^8.1.7"
+pygithub = "^2.2.0"
+peewee = "^3.17.0"
+eth-account = "^0.11.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+twine = "^5.1.0"
+build = "^1.2.1"
+
+[build-system]
+requires = ['poetry-core']
+build-backend = 'poetry.core.masonry.api'
+
+[tool.poetry.scripts]
+croco = "croco_cli.__main__:cli"
