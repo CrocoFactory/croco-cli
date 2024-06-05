@@ -1,7 +1,7 @@
 import json
 import click
+from croco_cli.database import Database
 from croco_cli.utils import require_wallet, constant_case
-from croco_cli.database import database
 
 
 @click.group()
@@ -13,6 +13,8 @@ def make():
 @require_wallet
 def dotenv():
     """Make file with environment variables. Use with python-dotenv"""
+    database = Database()
+
     wallets = database.get_wallets()
     custom_accounts = database.get_custom_accounts(current=True)
     env_variables = database.get_env_variables()

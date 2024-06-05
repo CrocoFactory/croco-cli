@@ -1,11 +1,11 @@
 """
 This module contains functions to initialize python packages and projects
 """
-
+import datetime
 import os
 import click 
 from croco_cli.utils import snake_case, require_github
-from croco_cli.database import database
+from croco_cli.database import Database
 
 
 @click.group()
@@ -25,6 +25,8 @@ def _add_poetry(
     :param is_package: Whether project should be configured as Python package
     :return: None
     """
+    database = Database()
+
     snaked_name = snake_case(project_name)
     github_user = database.get_github_user()
 
@@ -93,6 +95,8 @@ def _initialize_folders(
     :param description: The description of the project
     :return: None
     """
+    database = Database()
+
     github_user = database.get_github_user()
     snaked_name = snake_case(project_name)
     os.mkdir(snaked_name)
@@ -132,7 +136,7 @@ PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
     with open('LICENSE', 'w') as license_file:
         license_file.write(f"""MIT License
 
-Copyright (c) 2023 {github_user['name']}
+Copyright (c) {datetime.datetime.now().year} {github_user['name']}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -168,8 +172,7 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())""")
             with open('globals.py', 'w') as global_file:
-                global_file.write(f"""
-import os
+                global_file.write(f"""import os
 import tomllib
 
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -197,6 +200,8 @@ def _add_readme(
     :param is_package: Whether the readme should be configured for the Python package
     :return: None
     """
+    database = Database()
+
     github_user = database.get_github_user()
     content = (f"""# {project_name}
 

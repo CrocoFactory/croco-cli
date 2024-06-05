@@ -3,13 +3,15 @@ Utility functions for croco-cli
 """
 import os
 import re
-import curses
+import blessed
 import getpass
 from typing import Any, Callable, Optional
 import click
+from croco_cli.database import Database
 from croco_cli.types import Option, Wallet, Package, GithubPackage, AnyCallable
 from functools import partial, wraps
-from croco_cli.database import database
+
+_term = blessed.Terminal()
 
 
 def snake_case(s: str) -> str:
@@ -45,31 +47,20 @@ def is_github_package(package: Package | GithubPackage) -> bool:
 def _show_key_mode(
         options: list[Option],
         command_description: str,
-        stdscr: curses.window
+        terminal: blessed.Terminal
 ) -> Any:
     """
     Shouldn't be used directly, instead use show_key_mode
     """
 
-    # TODO: Sometimes, there are many options to show them instantly. Fix that
-
     exit_option = Option(
         name='Exit',
         description='Return to the terminal',
-        handler=curses.endwin
+        handler=lambda: None  # No-op handler
     )
 
     options.append(exit_option)
 
-    curses.curs_set(0)  # Hide the cursor
-    curses.start_color()
-    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Color pair for selected option
-
-    stdscr.clear()
-
-    stdscr.refresh()
-
-    # Set up initial variables
     current_option = 0
     padded_name_len = max([len(option['name']) for option in options]) + 2
 
@@ -82,55 +73,45 @@ def _show_key_mode(
             use_description = False
             break
 
+    padded_description_len = None
     if use_description:
         padded_description_len = max(padded_description_lengths) + 2
 
-    while True:
-        stdscr.addstr(0, 0, command_description, curses.color_pair(1) | curses.A_BOLD | curses.A_REVERSE)
+    with terminal.fullscreen(), terminal.cbreak(), terminal.hidden_cursor():
+        while True:
+            print(terminal.move_yx(0, 0) + _term.clear())
+            print(terminal.bold_green(command_description + '\n'))
 
-        for i, option in enumerate(options):
-            name = option["name"].ljust(padded_name_len)
+            for i, option in enumerate(options):
+                name = option["name"].ljust(padded_name_len)
 
-            if use_description:
-                description = option['description'].ljust(padded_description_len)
-                option_text = f'{name} | {description}'
-            else:
-                option_text = name
-            if i == current_option:
-                stdscr.addstr(i + 2, 0, f"> {option_text}", curses.color_pair(1))
-            else:
-                stdscr.addstr(i + 2, 0, f"  {option_text}")
+                if use_description:
+                    description = option['description'].ljust(padded_description_len)
+                    option_text = f'{name} | {description}'
+                else:
+                    option_text = name
 
-        key = stdscr.getch()
+                if i == current_option:
+                    print(_term.green_reverse(f"> {option_text}"))
+                else:
+                    print(f"  {option_text}")
 
-        last_option_idx = len(options) - 1
-        if key == curses.KEY_UP:
-            if current_option > 0:
-                current_option -= 1
-            else:
-                current_option = last_option_idx
-        elif key == curses.KEY_DOWN:
-            if current_option < last_option_idx:
-                current_option += 1
-            else:
-                current_option = 0
-        elif key == 127 and (deleting_handler := options[current_option].get('deleting_handler')):
-            deleting_handler()
-            options.pop(current_option)
-            stdscr.clear()
-            if len(options) > 1:
+            key = terminal.inkey()
+
+            last_option_idx = len(options) - 1
+            if key.name == 'KEY_UP':
                 if current_option > 0:
                     current_option -= 1
                 else:
+                    current_option = last_option_idx
+            elif key.name == 'KEY_DOWN':
+                if current_option < last_option_idx:
                     current_option += 1
-            else:
-                curses.endwin()
-                return
-        elif key == 10:
-            selected_option = options[current_option]
-            stdscr.refresh()
-            curses.endwin()
-            return selected_option['handler']()
+                else:
+                    current_option = 0
+            elif key == '\n':
+                selected_option = options[current_option]
+                return selected_option['handler']()
 
 
 def show_key_mode(
@@ -144,8 +125,8 @@ def show_key_mode(
     :param command_description: description of the command
     :return: None
     """
-    handler = partial(_show_key_mode, options, command_description)
-    curses.wrapper(handler)
+    handler = partial(_show_key_mode, options, command_description, _term)
+    handler()
 
 
 def echo_error(text: str) -> None:
@@ -179,6 +160,8 @@ def require_github(func: Callable):
     :param func: The function to be decorated.
     :return: The decorated function.
     """
+    database = Database()
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not database.github_users.table_exists():
@@ -202,6 +185,8 @@ def require_wallet(func: Callable):
     :param func: The function to be decorated.
     :return: The decorated function.
     """
+    database = Database()
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not database.wallets.table_exists():
@@ -213,6 +198,7 @@ def require_wallet(func: Callable):
                 echo_warning('Wallet private key is missing. Set it to continue (croco set wallet).')
         else:
             return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -391,6 +377,8 @@ def show_wallets() -> None:
 
     :return: None
     """
+    database = Database()
+
     wallets = database.get_wallets()
     wallets = sort_wallets(wallets)
     for wallet in wallets:

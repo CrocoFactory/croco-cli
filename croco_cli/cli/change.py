@@ -1,5 +1,5 @@
 import click
-from croco_cli.database import database
+from croco_cli.database import Database
 from croco_cli.types import Option, Wallet, CustomAccount
 from croco_cli.utils import show_key_mode, sort_wallets, echo_error, make_screen_option
 
@@ -12,6 +12,7 @@ def change():
 def _make_wallet_option(wallet: Wallet) -> Option:
     """Create a new wallet option for keyboard interactive mode"""
     label = wallet['label']
+    database = Database()
 
     def _handler():
         database.set_wallet(wallet['private_key'], label)
@@ -35,6 +36,7 @@ def _make_wallet_option(wallet: Wallet) -> Option:
 def _make_custom_option(account: CustomAccount) -> Option:
     """Create a new custom account option for keyboard interactive mode"""
     label = account["email"]
+    database = Database()
 
     def _handler():
         account.pop('current')
@@ -59,6 +61,8 @@ def _make_custom_option(account: CustomAccount) -> Option:
 def _wallet():
     """Change the current wallet for unit tests"""
     wallets = []
+    database = Database()
+
     if database.wallets.table_exists():
         wallets = database.get_wallets()
 
@@ -76,6 +80,7 @@ def _wallet():
 def custom():
     """Change the custom user account"""
     accounts_map = dict()
+    database = Database()
 
     custom_accounts = database.get_custom_accounts()
     if not len(custom_accounts):
