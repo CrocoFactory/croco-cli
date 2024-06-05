@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'croco_cli'
-version = '0.2.0'
+version = '0.2.1'
 description = 'The CLI for developing Web3-based projects in Croco Factory'
 authors = ['Alexey <axbelenkov@gmail.com>']
 license = 'MIT'

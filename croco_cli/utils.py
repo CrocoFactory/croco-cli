@@ -56,7 +56,7 @@ def _show_key_mode(
     exit_option = Option(
         name='Exit',
         description='Return to the terminal',
-        handler=lambda: None  # No-op handler
+        handler=_term.clear()
     )
 
     options.append(exit_option)
@@ -109,9 +109,11 @@ def _show_key_mode(
                     current_option += 1
                 else:
                     current_option = 0
-            elif key == '\n':
+            elif key == '\n' or key.name == 'KEY_ENTER':
                 selected_option = options[current_option]
-                return selected_option['handler']()
+                break
+                
+    return selected_option['handler']()
 
 
 def show_key_mode(
