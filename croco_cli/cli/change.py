@@ -83,7 +83,7 @@ def custom():
     database = Database()
 
     custom_accounts = database.get_custom_accounts()
-    if not len(custom_accounts):
+    if not custom_accounts or not len(custom_accounts):
         echo_error('There are no custom accounts in the database to change.')
         return
 
