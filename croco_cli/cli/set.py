@@ -1,9 +1,9 @@
 import click
 from typing import Optional
-from croco_cli.database import database
 from croco_cli.types import CustomAccount, Wallet
 from .user import _show_github, _show_custom_account
 from croco_cli.utils import show_wallet, show_detail, constant_case
+from croco_cli.database import Database
 
 
 @click.group(name='set')
@@ -17,6 +17,8 @@ def _set():
 @click.argument('mnemonic', default=None, required=False, type=click.STRING)
 def wallet(private_key: str, label: Optional[str] = None, mnemonic: Optional[str] = None) -> None:
     """Set wallet for unit tests using its private key"""
+    database = Database()
+
     database.set_wallet(private_key, label, mnemonic)
     public_key = database.get_public_key(private_key)
     current_wallet = Wallet(
@@ -33,10 +35,12 @@ def wallet(private_key: str, label: Optional[str] = None, mnemonic: Optional[str
 @click.argument('access_token', default=None, required=False, type=click.STRING)
 def git(access_token: str):
     """Set GitHub user account, using access token"""
+    database = Database()
+
     if not access_token:
         access_token = click.prompt('Please enter the access token of new account', hide_input=True)
 
-    database.set_github(access_token)
+    database.set_github_user(access_token)
     _show_github()
 
 
@@ -62,6 +66,8 @@ def custom(
         email_password: Optional[str] = None
 ) -> None:
     """Set a custom user account"""
+    database = Database()
+
     email_password = email_password or password
 
     data = {key: value for key, value in fields}
@@ -85,6 +91,8 @@ def custom(
 @click.argument('value', type=click.STRING)
 def envar(key: str, value: str) -> None:
     """Set an environment variable"""
+    database = Database()
+
     key = constant_case(key)
     database.set_env_variable(key, value)
     show_detail(key, value, 0)

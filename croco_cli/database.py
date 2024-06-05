@@ -13,6 +13,16 @@ from croco_cli.types import GithubUser, Wallet, CustomAccount, EnvVariable
 from peewee import Model, CharField, BlobField, SqliteDatabase, BooleanField
 
 
+class _DatabaseMeta(type):
+    _instance = None
+
+    def __call__(cls, *args, **kwargs):
+        if not isinstance(cls._instance, cls):
+            cls._instance = super().__call__(*args, **kwargs)
+
+        return cls._instance
+
+
 def _get_cache_folder() -> str:
     username = getpass.getuser()
     os_name = os.name
@@ -32,7 +42,7 @@ def _get_cache_folder() -> str:
     return cache_path
 
 
-class Database:
+class Database(metaclass=_DatabaseMeta):
     _path: ClassVar[str] = os.path.join(_get_cache_folder(), 'user.db')
     interface: ClassVar[SqliteDatabase] = SqliteDatabase(_path)
 
@@ -368,7 +378,7 @@ class Database:
     def get_env_variables(self) -> list[EnvVariable] | None:
         env_variables = self._env_variables
         if not env_variables.table_exists():
-            return 
+            return
 
         query = env_variables.select()
 
@@ -383,6 +393,3 @@ class Database:
     def delete_env_variables(self) -> None:
         env_variables = self._env_variables
         env_variables.delete().execute()
-
-
-database = Database()

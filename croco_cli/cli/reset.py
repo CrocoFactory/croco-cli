@@ -1,5 +1,5 @@
 import click
-from croco_cli.database import database
+from croco_cli.database import Database
 
 
 @click.command()
@@ -45,6 +45,8 @@ from croco_cli.database import database
 )
 def reset(user: bool, git: bool, wallets: bool, custom: bool, envar: bool):
     """Reset user accounts"""
+    database = Database()
+
     if git or wallets or custom or envar:
         if git:
             database.github_users.drop_table()

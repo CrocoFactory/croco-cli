@@ -5,10 +5,10 @@ This module contains functions to install Croco Factory packages
 import os
 import click
 from functools import partial
+from croco_cli.database import Database
 from croco_cli.types import Option, Package, GithubPackage, PackageSet
 from croco_cli.utils import show_key_mode, require_github, is_github_package
 from croco_cli.globals import PYPI_PACKAGES, GITHUB_PACKAGES, PACKAGE_SETS
-from croco_cli.database import database
 
 _DESCRIPTION = "Install Croco Factory packages"
 
@@ -47,6 +47,8 @@ def _make_install_option(
     :param package: package to install
     :return: An installing option
     """
+    database = Database()
+
     github_user = database.get_github_user()
     package_name = package['name']
     description = package['description']

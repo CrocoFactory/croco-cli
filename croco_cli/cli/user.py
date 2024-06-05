@@ -1,6 +1,6 @@
 import json
 import click
-from croco_cli.database import database
+from croco_cli.database import Database
 from croco_cli.types import CustomAccount
 from croco_cli.utils import require_github, show_detail, show_label, hide_value, show_account_dict, show_wallets, echo_error
 
@@ -43,6 +43,8 @@ def user(git: bool, wallets: bool, custom: bool) -> None:
 
 def _show_github() -> None:
     """Show GitHub user account"""
+    database = Database()
+
     github_user = database.get_github_user()
     access_token = hide_value(github_user['access_token'], 10)
     show_label('GitHub')
@@ -66,6 +68,8 @@ def _show_custom_account(custom_account: CustomAccount) -> None:
 
 def _show_custom_accounts() -> None:
     """Show custom accounts of user"""
+    database = Database()
+
     if not database.custom_accounts.table_exists():
         echo_error('There are no custom accounts to show')
         return
