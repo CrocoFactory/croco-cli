@@ -2,12 +2,13 @@
 This module contains functions to install Croco Factory packages
 """
 
-import os
 import click
 from functools import partial
-from croco_cli.database import Database
-from croco_cli.types import Option, Package, GithubPackage, PackageSet
-from croco_cli.utils import show_key_mode, require_github, is_github_package
+from croco_cli._database import Database
+from croco_cli.tools.keymode import KeyMode
+from croco_cli.tools.option import Option
+from croco_cli.types import Package, GithubPackage, PackageSet
+from croco_cli.utils import require_github, is_github_package, run_poetry_command, check_poetry
 from croco_cli.globals import PYPI_PACKAGES, GITHUB_PACKAGES, PACKAGE_SETS
 
 _DESCRIPTION = "Install Croco Factory packages"
@@ -36,7 +37,7 @@ def _install_package(
         if branch:
             command += f"@{branch}"
 
-    os.system(command)
+    run_poetry_command(command)
 
 
 def _make_install_option(
@@ -81,14 +82,14 @@ def _make_set_install_option(
     set_map = PACKAGE_SETS[package_set]
     handlers = [partial(_install_package, package) for package in set_map['packages']]
 
-    def handler():
+    def set_handler():
         for handler in handlers:
             handler()
 
     return Option(
         name=package_set,
         description=set_map['description'],
-        handler=handler
+        handler=set_handler
     )
 
 
@@ -107,15 +108,6 @@ def _get_options(set_mode: bool) -> list[Option]:
     return options
 
 
-def _show_install_screen(set_mode: bool) -> None:
-    """
-    Shows the installation packages screen
-    :return: None
-    """
-    options = _get_options(set_mode)
-    show_key_mode(options, _DESCRIPTION)
-
-
 @click.command(help=_DESCRIPTION)
 @click.option(
     '-s',
@@ -127,5 +119,8 @@ def _show_install_screen(set_mode: bool) -> None:
     default=False
 )
 @require_github
+@check_poetry
 def install(set_: bool):
-    _show_install_screen(set_)
+    options = _get_options(set_)
+    keymode = KeyMode(options, _DESCRIPTION)
+    keymode()

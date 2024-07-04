@@ -14,13 +14,6 @@ ClickGroup = Union[Group, Callable[[AnyCallable], Union[Group, GrpType]]]
 ClickCommand = Union[Callable[[Callable[..., Any]], Command], Command]
 
 
-class Option(TypedDict):
-    name: str
-    description: NotRequired[str]
-    handler: AnyCallable
-    deleting_handler: NotRequired[AnyCallable]
-
-
 class Package(TypedDict):
     name: str
     description: str
@@ -60,6 +53,6 @@ class CustomAccount(TypedDict):
     data: NotRequired[dict[str, str]]
 
 
-class EnvVariable(TypedDict):
+class EnvVar(TypedDict):
     key: str
     value: str

@@ -1,61 +1,61 @@
 import click
-from croco_cli.database import Database
+from croco_cli._database import Database
 
 
 @click.command()
 @click.option(
     '-u',
     '--user',
+    'info',
     help='Reset all user data',
     show_default=True,
-    is_flag=True,
+    flag_value='user',
     default=True
 )
 @click.option(
-    '-g',
     '--git',
+    '-g',
+    'info',
     help='Reset GitHub user data',
-    show_default=True,
-    is_flag=True,
-    default=False
+    flag_value='git',
+    default=True
 )
 @click.option(
-    '-w',
     '--wallets',
+    '-w',
+    'info',
     help='Reset wallet user data',
-    show_default=True,
-    is_flag=True,
+    flag_value='wallets',
     default=False
 )
 @click.option(
-    '-c',
     '--custom',
+    '-c',
+    'info',
     help='Reset custom user accounts',
-    show_default=True,
-    is_flag=True,
+    flag_value='custom',
     default=False
 )
 @click.option(
+    '--env',
     '-e',
-    '--envar',
+    'info',
     help='Reset environment variables accounts',
-    show_default=True,
-    is_flag=True,
+    flag_value='env',
     default=False
 )
-def reset(user: bool, git: bool, wallets: bool, custom: bool, envar: bool):
+def reset(info: str):
     """Reset user accounts"""
     database = Database()
 
-    if git or wallets or custom or envar:
-        if git:
+    match info:
+        case 'git':
             database.github_users.drop_table()
-        if wallets:
+        case 'wallets':
             database.wallets.drop_table()
-        if custom:
+        case 'custom':
             database.custom_accounts.drop_table()
-        if envar:
+        case 'envar':
             database.env_variables.drop_table()
-        return
-    elif user:
-        database.drop_database()
+        case 'user':
+            database.drop_database()

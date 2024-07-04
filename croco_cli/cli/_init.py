@@ -1,11 +1,12 @@
 """
 This module contains functions to initialize python packages and projects
 """
-import datetime
 import os
-import click 
-from croco_cli.utils import snake_case, require_github
-from croco_cli.database import Database
+import click
+import datetime
+from importlib import metadata
+from croco_cli._database import Database
+from croco_cli.utils import snake_case, require_github, run_poetry_command, check_poetry
 
 
 @click.group()
@@ -58,6 +59,9 @@ packages = [{{ include = '{snaked_name}' }}]
 [tool.poetry.dependencies]
 python = '^3.11'
 
+[tool.poetry.group.dev.dependencies]
+croco-cli = '^{metadata.version('croco-cli')}'
+
 [build-system]
 requires = ['poetry-core']
 build-backend = 'poetry.core.masonry.api'
@@ -73,15 +77,15 @@ def _add_packages(open_source: bool, is_package: bool) -> None:
     :param is_package: Whether packages should be installed for the developing a Python package
     :return: None
     """
-    os.system('poetry add -D pytest')
-    os.system('poetry add -D python-dotenv')
+    run_poetry_command('poetry add -D pytest')
+    run_poetry_command('poetry add -D python-dotenv')
 
     if not is_package:
-        os.system('poetry add loguru')
+        run_poetry_command('poetry add loguru')
         return
     elif open_source:
-        os.system('poetry add -D build')
-        os.system('poetry add -D twine')
+        run_poetry_command('poetry add -D build')
+        run_poetry_command('poetry add -D twine')
 
 
 def _initialize_folders(
@@ -118,7 +122,7 @@ PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 ~~~~~~~~~~~~~~
 {description}
 
-:copyright: (c) 2023 by {github_user['name']}
+:copyright: (c) {datetime.datetime.now().year} by {github_user['name']}
 :license: MIT, see LICENSE for more details.
 \"\"\"
 """)
@@ -161,8 +165,7 @@ SOFTWARE.""")
                 pass
 
             with open('main.py', 'w') as main_file:
-                main_file.write("""import loguru
-import asyncio
+                main_file.write("""import asyncio
 
 
 async def main():
@@ -203,11 +206,19 @@ def _add_readme(
     database = Database()
 
     github_user = database.get_github_user()
-    content = (f"""# {project_name}
 
-[![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)
+    content = f"""# {project_name}
 
-{description}
+[![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)"""
+
+    if is_package:
+        content += (f"""\n\n[![PyPi Version](https://img.shields.io/pypi/v/{project_name})](https://pypi.org/project/{project_name}/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/{project_name}?label=downloads)](https://pypi.org/project/{project_name}/)
+[![License](https://img.shields.io/github/license/{github_user['login']}/{project_name}.svg)](https://pypi.org/project/{project_name}/)
+[![Last Commit](https://img.shields.io/github/last-commit/{github_user['login']}/{project_name}.svg)](https://pypi.org/project/{project_name}/)
+[![Development Status](https://img.shields.io/pypi/status/{project_name})](https://pypi.org/project/{project_name}/)""")
+
+    content += (f"""\n\n{description}
 
 - **[Telegram channel](https://t.me/crocofactory)**
 - **[Bug reports](https://github.com/{github_user['login']}/{project_name}/issues)**
@@ -245,6 +256,7 @@ pip install git+https://<TOKEN>@github.com/{github_user['login']}/{project_name}
 
 @init.command()
 @require_github
+@check_poetry
 def package() -> None:
     """Initialize the package directory"""
     repo_name = os.path.basename(os.getcwd())
@@ -262,6 +274,7 @@ def package() -> None:
 
 @init.command()
 @require_github
+@check_poetry
 def project() -> None:
     """Initialize the project directory"""
     repo_name = os.path.basename(os.getcwd())

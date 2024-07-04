@@ -2,15 +2,49 @@
 This module provides a database interface
 """
 import json
+import sys
 import os
 import pickle
 import getpass
 from eth_account import Account
-from github import Auth
-from github import Github
+from github import Auth, BadCredentialsException, Github
 from typing import Type, Optional, ClassVar
-from croco_cli.types import GithubUser, Wallet, CustomAccount, EnvVariable
+from eth_utils.exceptions import ValidationError
+from croco_cli.exceptions import InvalidToken, InvalidMnemonic
+from croco_cli.types import GithubUser, Wallet, CustomAccount, EnvVar
 from peewee import Model, CharField, BlobField, SqliteDatabase, BooleanField
+
+
+def _get_cache_folder() -> str:
+    """
+    Get the cache folder path based on the operating system.
+
+    :return: Cache folder path.
+    """
+    username = getpass.getuser()
+    os_name = os.name
+
+    venv_path = sys.prefix
+
+    parent_path = venv_path[:venv_path.rfind('/')]
+    folder = os.path.basename(parent_path)
+
+    if os_name == "posix":
+        cache_folder = f'/Users/{username}/.croco_cli'
+    elif os_name == "nt":
+        cache_folder = f'C:/Users/{username}/AppData/Local/croco_cli'
+    else:
+        raise OSError(f"Unsupported Operating System {os_name}")
+
+    if not os.path.exists(cache_folder):
+        os.mkdir(cache_folder)
+
+    cache_path = os.path.join(cache_folder, folder)
+
+    if not os.path.exists(cache_path):
+        os.mkdir(cache_path)
+
+    return cache_path
 
 
 class _DatabaseMeta(type):
@@ -21,25 +55,6 @@ class _DatabaseMeta(type):
             cls._instance = super().__call__(*args, **kwargs)
 
         return cls._instance
-
-
-def _get_cache_folder() -> str:
-    username = getpass.getuser()
-    os_name = os.name
-
-    if os_name == "posix":
-        cache_path = f'/Users/{username}/.cache/croco_cli'
-    elif os_name == "nt":
-        cache_path = f'C:\\Users\\{username}\\AppData\\Local\\croco_cli'
-    else:
-        raise OSError(f"Unsupported Operating System {os_name}")
-
-    try:
-        os.mkdir(cache_path)
-    except FileExistsError:
-        pass
-
-    return cache_path
 
 
 class Database(metaclass=_DatabaseMeta):
@@ -129,14 +144,18 @@ class Database(metaclass=_DatabaseMeta):
         """
         self.interface.drop_tables([self.github_users, self.wallets, self.custom_accounts, self.env_variables])
 
-    def get_wallets(self) -> list[Wallet] | None:
+    def get_wallets(self, current: bool = False) -> list[Wallet] | None:
         """
         Returns a list of all ethereum wallets of the user
         :return: a list of all ethereum wallets of the user
         """
-        query = self.wallets.select()
         if not self.wallets.table_exists():
             return None
+
+        if not current:
+            query = self.wallets.select()
+        else:
+            query = self.wallets.select().where(self._wallets.current)
 
         wallets = [
             Wallet(
@@ -148,7 +167,7 @@ class Database(metaclass=_DatabaseMeta):
             )
             for wallet in query
         ]
-        return wallets
+        return wallets if wallets else None
 
     def get_github_user(self) -> GithubUser | None:
         """
@@ -183,13 +202,16 @@ class Database(metaclass=_DatabaseMeta):
         _auth = Auth.Token(token)
 
         with Github(auth=_auth) as github_api:
-            user = github_api.get_user()
-            _emails = user.get_emails()
+            try:
+                user = github_api.get_user()
+                _emails = user.get_emails()
 
-            for email in _emails:
-                if email.primary:
-                    user_email = email.email
-                    break
+                for email in _emails:
+                    if email.primary:
+                        user_email = email.email
+                        break
+            except BadCredentialsException:
+                raise InvalidToken
 
         github_users.create(
             data=pickle.dumps(user),
@@ -218,6 +240,16 @@ class Database(metaclass=_DatabaseMeta):
         public_key = account.address
         return public_key
 
+    @staticmethod
+    def _get_private_key(mnemonic: str) -> str:
+        try:
+            Account.enable_unaudited_hdwallet_features()
+            account = Account.from_mnemonic(mnemonic)
+            private_key = account.key.hex()
+            return private_key
+        except ValidationError:
+            raise InvalidMnemonic
+
     def set_wallet(
             self,
             private_key: str,
@@ -234,7 +266,13 @@ class Database(metaclass=_DatabaseMeta):
         wallets = self._wallets
         database = self.interface
 
+        if label == 'None':
+            label = None
+
         database.create_tables([wallets])
+
+        if mnemonic and private_key != self._get_private_key(mnemonic):
+            raise InvalidMnemonic
 
         existing_wallets = wallets.select().where(wallets.private_key == private_key)
 
@@ -291,11 +329,12 @@ class Database(metaclass=_DatabaseMeta):
                 current=account.current,
                 email=account.email,
                 email_password=account.email_password,
-                data=account.data
+                data=json.loads(account.data)
             )
             for account in query
         ]
-        return accounts
+
+        return accounts if accounts else None
 
     def set_custom_account(
             self,
@@ -344,7 +383,7 @@ class Database(metaclass=_DatabaseMeta):
                 data=json.dumps(data)
             )
 
-    def delete_custom_accounts(self, account: str, email: str) -> None:
+    def delete_custom_accounts(self, account: str, email: Optional[str] = None) -> None:
         """
         Delete custom user accounts
         :param account: A name of accounts
@@ -352,11 +391,17 @@ class Database(metaclass=_DatabaseMeta):
         :return: None
         """
         custom_accounts = self._custom_accounts
-        custom_accounts.delete().where(
-            custom_accounts.account == account and custom_accounts.email == email
-        ).execute()
 
-    def set_env_variable(
+        if email:
+            custom_accounts.delete().where(
+                custom_accounts.account == account and custom_accounts.email == email
+            ).execute()
+        else:
+            custom_accounts.delete().where(
+                custom_accounts.account == account
+            ).execute()
+
+    def set_envar(
             self,
             key: str,
             value: str
@@ -375,7 +420,7 @@ class Database(metaclass=_DatabaseMeta):
                 value=value
             )
 
-    def get_env_variables(self) -> list[EnvVariable] | None:
+    def get_env_variables(self) -> list[EnvVar] | None:
         env_variables = self._env_variables
         if not env_variables.table_exists():
             return
@@ -383,7 +428,7 @@ class Database(metaclass=_DatabaseMeta):
         query = env_variables.select()
 
         return [
-            EnvVariable(
+            EnvVar(
                 key=env_variable.key,
                 value=env_variable.value
             )

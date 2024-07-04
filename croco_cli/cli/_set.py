@@ -1,9 +1,9 @@
 import click
 from typing import Optional
 from croco_cli.types import CustomAccount, Wallet
-from .user import _show_github, _show_custom_account
-from croco_cli.utils import show_wallet, show_detail, constant_case
-from croco_cli.database import Database
+from croco_cli.utils import constant_case, catch_github_errors, catch_wallet_errors
+from croco_cli._database import Database
+from croco_cli.croco_echo import CrocoEcho
 
 
 @click.group(name='set')
@@ -15,11 +15,13 @@ def _set():
 @click.argument('private_key', default=None, type=click.STRING)
 @click.argument('label', default=None, required=False, type=click.STRING)
 @click.argument('mnemonic', default=None, required=False, type=click.STRING)
+@catch_wallet_errors
 def wallet(private_key: str, label: Optional[str] = None, mnemonic: Optional[str] = None) -> None:
     """Set wallet for unit tests using its private key"""
     database = Database()
 
     database.set_wallet(private_key, label, mnemonic)
+
     public_key = database.get_public_key(private_key)
     current_wallet = Wallet(
         private_key=private_key,
@@ -28,11 +30,12 @@ def wallet(private_key: str, label: Optional[str] = None, mnemonic: Optional[str
         current=True,
         label=label
     )
-    show_wallet(current_wallet)
+    CrocoEcho.wallet(current_wallet)
 
 
 @_set.command()
 @click.argument('access_token', default=None, required=False, type=click.STRING)
+@catch_github_errors
 def git(access_token: str):
     """Set GitHub user account, using access token"""
     database = Database()
@@ -41,7 +44,7 @@ def git(access_token: str):
         access_token = click.prompt('Please enter the access token of new account', hide_input=True)
 
     database.set_github_user(access_token)
-    _show_github()
+    CrocoEcho.github()
 
 
 @_set.command()
@@ -83,7 +86,7 @@ def custom(
         data=data
     )
 
-    _show_custom_account(custom_account)
+    CrocoEcho.custom_account(custom_account)
 
 
 @_set.command()
@@ -94,5 +97,5 @@ def envar(key: str, value: str) -> None:
     database = Database()
 
     key = constant_case(key)
-    database.set_env_variable(key, value)
-    show_detail(key, value, 0)
+    database.set_envar(key, value)
+    CrocoEcho.detail(key, value, 0)
