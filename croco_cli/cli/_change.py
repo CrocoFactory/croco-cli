@@ -1,7 +1,11 @@
 import click
-from croco_cli.database import Database
-from croco_cli.types import Option, Wallet, CustomAccount
-from croco_cli.utils import show_key_mode, sort_wallets, echo_error, make_screen_option
+from croco_cli._database import Database
+from croco_cli.tools.keymode import KeyMode
+from croco_cli.tools.option import Option
+from croco_cli.types import CustomAccount
+from croco_cli.utils import Wallet
+from croco_cli.utils import sort_wallets
+from croco_cli.croco_echo import CrocoEcho
 
 
 @click.group()
@@ -19,6 +23,26 @@ def _make_wallet_option(wallet: Wallet) -> Option:
 
     def _deleting_handler():
         database.delete_wallet(wallet['private_key'])
+        wallets = database.get_wallets()
+
+        if wallets:
+            try:
+                last_wallet = database.get_wallets()[-1]
+                current_wallet = filter(lambda x: x['current'], wallets)
+
+                try:
+                    current_wallet = next(current_wallet)
+                except StopIteration:
+                    current_wallet = None
+
+                if not current_wallet:
+                    database.set_wallet(
+                        last_wallet['private_key'],
+                        last_wallet['label'],
+                        last_wallet['mnemonic']
+                    )
+            except IndexError:
+                pass
 
     if wallet["current"]:
         label = f'{label} (Current)'
@@ -45,6 +69,24 @@ def _make_custom_option(account: CustomAccount) -> Option:
     def _deleting_handler():
         database.delete_custom_accounts(account['account'], account['email'])
 
+        custom_accounts = database.get_custom_accounts(account['account'])
+
+        if custom_accounts:
+            try:
+                last_custom_account = custom_accounts[-1]
+                current_account = filter(lambda x: x['current'], custom_accounts)
+
+                try:
+                    current_account = next(current_account)
+                except StopIteration:
+                    current_account = None
+
+                if not current_account:
+                    last_custom_account.pop('current')
+                    database.set_custom_account(**last_custom_account)
+            except IndexError:
+                pass
+
     if account["current"]:
         label = f'{label} (Current)'
 
@@ -67,13 +109,14 @@ def _wallet():
         wallets = database.get_wallets()
 
     if len(wallets) < 2:
-        echo_error('There are no wallets in the database to change.')
+        CrocoEcho.error('There are no wallets in the database to change.')
         return
 
     wallets = sort_wallets(wallets)
 
     options = [_make_wallet_option(wallet) for wallet in wallets]
-    show_key_mode(options, 'Change wallet for unit tests')
+    keymode = KeyMode(options, 'Change wallet for unit tests')
+    keymode()
 
 
 @change.command()
@@ -84,7 +127,7 @@ def custom():
 
     custom_accounts = database.get_custom_accounts()
     if not custom_accounts or not len(custom_accounts):
-        echo_error('There are no custom accounts in the database to change.')
+        CrocoEcho.error('There are no custom accounts in the database to change.')
         return
 
     for account in custom_accounts:
@@ -103,11 +146,10 @@ def custom():
         description = f'Change {key.capitalize()} account'
 
         def deleting_handler():
-            custom_accounts = database.custom_accounts
-            custom_accounts.delete().where(custom_accounts.account == key).execute()
+            database.delete_custom_accounts(key)
 
         screen_options.append(
-            make_screen_option(
+            KeyMode.screen_option(
                 key.capitalize(),
                 description,
                 account_options,
@@ -116,7 +158,8 @@ def custom():
         )
 
     if not len(screen_options):
-        echo_error('There are no custom accounts in the database to change.')
+        CrocoEcho.error('There are no custom accounts in the database to change.')
         return
 
-    show_key_mode(screen_options, 'Change custom account')
+    keymode = KeyMode(screen_options, 'Change custom account')
+    keymode()
