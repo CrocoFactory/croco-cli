@@ -211,7 +211,7 @@ def _add_readme(
 
 [![Croco Logo](https://i.ibb.co/G5Pjt6M/logo.png)](https://t.me/crocofactory)"""
 
-    if is_package:
+    if is_package and open_source:
         content += (f"""\n\n[![PyPi Version](https://img.shields.io/pypi/v/{project_name})](https://pypi.org/project/{project_name}/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/{project_name}?label=downloads)](https://pypi.org/project/{project_name}/)
 [![License](https://img.shields.io/github/license/{github_user['login']}/{project_name}.svg)](https://pypi.org/project/{project_name}/)
