@@ -26,8 +26,8 @@ Command `croco` display this in your console.
 Let`s learn them:
 
 - `change` - if you already have set multiple accounts, using `set` you can change current
-- `export` - Export cli configuration
-- `import` - Import cli configuration
+- `export` - export cli configuration
+- `import` - import cli configuration
 - `init` - if you created you project or pacakge just now, you can initialize it, using template structure
 - `install` - install Croco Factory packages. If package is placed in private GitHub repository, you need to have access 
               token with permission of downloading this package
