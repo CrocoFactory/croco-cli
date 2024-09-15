@@ -1,6 +1,6 @@
 # croco-cli
 
-<a href="https://github.com/CrocoFactory"><img alt="Croco Logo" src="https://raw.githubusercontent.com/CrocoFactory/.github/main/branding/logo/bookmark.png" width="100" style="border-radius:7px;"></a>
+<a href="https://github.com/CrocoFactory"><img alt="Croco Logo" src="https://raw.githubusercontent.com/CrocoFactory/.github/main/branding/logo/bookmark_rounded.png" width="100"></a>
 
 [![PyPi version](https://img.shields.io/pypi/v/croco-cli)](https://pypi.org/project/croco-cli/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/croco-cli)](https://pypi.org/project/croco-cli/)
@@ -9,11 +9,12 @@
 [![Development Status](https://img.shields.io/pypi/status/croco-cli)](https://pypi.org/project/croco-cli/)
 
 
-The CLI for developing Web3-based projects in Croco Factory
+The CLI for developing Web3-based projects in **[Croco Factory](https://github.com/CrocoFactory)**
 
-- **[Croco Factory](https://github.com/CrocoFactory)**
 - **[Bug reports](https://github.com/CrocoFactory/croco-cli/issues)**
 - **[Quick Overview](#quick-overview)**
+
+The project is made by the **[Croco Factory](https://github.com/CrocoFactory)** team.
 
 Project's source code is made available under the [MIT License](LICENSE)
            
