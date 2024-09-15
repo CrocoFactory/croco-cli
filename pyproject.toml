@@ -1,12 +1,12 @@
 [tool.poetry]
 name = 'croco_cli'
-version = '0.3.1'
+version = '0.3.1.post1'
 description = 'The CLI for developing Web3-based projects in Croco Factory'
 authors = ['Alexey <axbelenkov@gmail.com>']
 license = 'MIT'
 readme = 'README.md'
-repository = 'https://github.com/blnkoff/croco-cli'
-homepage = 'https://github.com/blnkoff/croco-cli'
+repository = 'https://github.com/CrocoFactory/croco-cli'
+homepage = 'https://github.com/CrocoFactory/croco-cli'
 classifiers = [
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
